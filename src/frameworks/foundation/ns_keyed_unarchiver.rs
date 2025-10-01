@@ -25,7 +25,9 @@ use crate::objc::{
 };
 use crate::Environment;
 use flate2::read::{GzDecoder, ZlibDecoder};
+use nibarchive::{NIBArchive, ValueVariant};
 use plist::{Dictionary, Error, Uid, Value};
+use std::collections::HashMap;
 use std::io::{Cursor, Read};
 use zip::ZipArchive;
 
@@ -48,9 +50,88 @@ struct NSKeyedUnarchiverHostObject {
 }
 impl HostObject for NSKeyedUnarchiverHostObject {}
 
+fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
+    let nib = NIBArchive::from_bytes(slice)
+        .map_err(|e| {
+            log!("NIBArchive parsing error: {:?}", e);
+            Value::from_reader_xml(Cursor::new(b"")).unwrap_err()
+        })?;
+    
+    let mut objects: Vec<Value> = Vec::new();
+    objects.push(Value::String("$null".to_string()));
+    
+    let mut class_map: HashMap<String, usize> = HashMap::new();
+    
+    for obj in nib.objects() {
+        let class_name = obj.class_name(nib.class_names()).name();
+        
+        let class_uid = if let Some(&uid) = class_map.get(class_name) {
+            uid
+        } else {
+            let uid = objects.len();
+            class_map.insert(class_name.to_string(), uid);
+            
+            let mut class_dict = Dictionary::new();
+            class_dict.insert("$classname".to_string(), Value::String(class_name.to_string()));
+            let classes = vec![
+                Value::String(class_name.to_string()),
+                Value::String("NSObject".to_string()),
+            ];
+            class_dict.insert("$classes".to_string(), Value::Array(classes));
+            objects.push(Value::Dictionary(class_dict));
+            uid
+        };
+        
+        let mut obj_dict = Dictionary::new();
+        obj_dict.insert("$class".to_string(), Value::Uid(Uid::new((class_uid as u64).try_into().unwrap())));
+        
+        for value in obj.values(nib.values()) {
+            let key = value.key(nib.keys());
+            let val = match value.value() {
+                ValueVariant::Int8(v) => Value::Integer((*v as i64).into()),
+                ValueVariant::Int16(v) => Value::Integer((*v as i64).into()),
+                ValueVariant::Int32(v) => Value::Integer((*v as i64).into()),
+                ValueVariant::Int64(v) => Value::Integer((*v).into()),
+                ValueVariant::Bool(v) => Value::Boolean(*v),
+                ValueVariant::Float(v) => Value::Real((*v as f64).into()),
+                ValueVariant::Double(v) => Value::Real((*v).into()),
+                ValueVariant::Data(v) => Value::Data(v.clone()),
+                ValueVariant::Nil => {
+                    obj_dict.insert(key.to_string(), Value::Uid(Uid::new(0)));
+                    continue;
+                },
+                ValueVariant::ObjectRef(idx) => {
+                    Value::Uid(Uid::new((*idx as u64 + 1).try_into().unwrap()))
+                },
+            };
+            obj_dict.insert(key.to_string(), val);
+        }
+        
+        objects.push(Value::Dictionary(obj_dict));
+    }
+    
+    let mut root = Dictionary::new();
+    root.insert("$version".to_string(), Value::Integer(100000.into()));
+    root.insert("$archiver".to_string(), Value::String("NSKeyedArchiver".to_string()));
+    root.insert("$objects".to_string(), Value::Array(objects));
+    
+    let mut top = Dictionary::new();
+    if nib.objects().len() > 0 {
+        top.insert("UINibEncoderEmptyKey".to_string(), Value::Uid(Uid::new(1)));
+    }
+    root.insert("$top".to_string(), Value::Dictionary(top));
+    
+    Ok(Value::Dictionary(root))
+}
+
 fn parse_value_from_slice(slice: &[u8]) -> Result<Value, Error> {
     if slice.is_empty() {
         return Value::from_reader_xml(Cursor::new(b""));
+    }
+    
+    if slice.starts_with(b"NIBArchive") {
+        log!("Detected NIBArchive format, converting to plist...");
+        return convert_nibarchive_to_plist(slice);
     }
     
     if slice.starts_with(b"bplist") {
