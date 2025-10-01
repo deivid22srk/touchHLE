@@ -24,8 +24,10 @@ use crate::objc::{
     NSZonePtr,
 };
 use crate::Environment;
-use plist::{Dictionary, Uid, Value};
-use std::io::Cursor;
+use flate2::read::{GzDecoder, ZlibDecoder};
+use plist::{Dictionary, Error, Uid, Value};
+use std::io::{Cursor, Read};
+use zip::ZipArchive;
 
 pub const NSKeyedArchiveRootObjectKey: &str = "root";
 
@@ -43,6 +45,61 @@ struct NSKeyedUnarchiverHostObject {
     delegate: id,
 }
 impl HostObject for NSKeyedUnarchiverHostObject {}
+
+fn parse_value_from_slice(slice: &[u8]) -> Result<Value, Error> {
+    Value::from_reader(Cursor::new(slice)).or_else(|binary_err| {
+        Value::from_reader_xml(Cursor::new(slice)).or(Err(binary_err))
+    })
+}
+
+fn parse_keyed_archive(slice: &[u8]) -> Result<Value, Error> {
+    let mut last_err = match parse_value_from_slice(slice) {
+        Ok(value) => return Ok(value),
+        Err(err) => err,
+    };
+
+    if slice.starts_with(b"\x1f\x8b") {
+        let mut decoder = GzDecoder::new(Cursor::new(slice));
+        let mut decompressed = Vec::new();
+        match decoder.read_to_end(&mut decompressed) {
+            Ok(_) => match parse_value_from_slice(&decompressed) {
+                Ok(value) => return Ok(value),
+                Err(err) => last_err = err,
+            },
+            Err(decode_err) => log!("NSKeyedUnarchiver: failed to gunzip archive: {}", decode_err),
+        }
+    }
+
+    if slice.starts_with(b"\x78\x9c") || slice.starts_with(b"\x78\xda") {
+        let mut decoder = ZlibDecoder::new(Cursor::new(slice));
+        let mut decompressed = Vec::new();
+        match decoder.read_to_end(&mut decompressed) {
+            Ok(_) => match parse_value_from_slice(&decompressed) {
+                Ok(value) => return Ok(value),
+                Err(err) => last_err = err,
+            },
+            Err(decode_err) => log!("NSKeyedUnarchiver: failed to inflate zlib archive: {}", decode_err),
+        }
+    }
+
+    if slice.starts_with(b"PK\x03\x04") {
+        if let Ok(mut archive) = ZipArchive::new(Cursor::new(slice)) {
+            for index in 0..archive.len() {
+                if let Ok(mut file) = archive.by_index(index) {
+                    let mut decompressed = Vec::new();
+                    if file.read_to_end(&mut decompressed).is_ok() {
+                        match parse_value_from_slice(&decompressed) {
+                            Ok(value) => return Ok(value),
+                            Err(err) => last_err = err,
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Err(last_err)
+}
 
 pub const CLASSES: ClassExports = objc_classes! {
 
@@ -92,7 +149,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     assert!(host_obj.current_key.is_none());
     assert!(host_obj.plist.is_empty());
 
-    let plist = Value::from_reader(Cursor::new(slice)).unwrap();
+    let plist = parse_keyed_archive(slice)
+        .unwrap_or_else(|err| panic!("Failed to parse keyed archive: {}", err));
     let plist = plist.into_dictionary().unwrap();
     assert!(plist["$version"].as_unsigned_integer() == Some(100000));
     assert!(plist["$archiver"].as_string() == Some("NSKeyedArchiver"));
