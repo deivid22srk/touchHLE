@@ -69,6 +69,13 @@ touchHLE_pvrt_decompress_wrapper = { path = "src/image/pvrt_decompress_wrapper" 
 touchHLE_stb_image_wrapper = { path = "src/image/stb_image_wrapper" }
 touchHLE_version = { path = "src/version" }
 
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+base64 = "0.21"
+png = { version = "0.17", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
 [build-dependencies]
 cargo-license = "0.5.1"
 cc = { workspace = true }

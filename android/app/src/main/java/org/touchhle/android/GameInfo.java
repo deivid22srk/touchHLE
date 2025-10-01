@@ -5,6 +5,7 @@
  */
 package org.touchhle.android;
 
+import android.graphics.Bitmap;
 import android.net.Uri;
 
 public class GameInfo {
@@ -18,6 +19,8 @@ public class GameInfo {
     private String size;
     private Uri fileUri;
     private Type type;
+    private Bitmap icon;
+    private String bundleIdentifier;
     
     public GameInfo(String name, String version, String size, Uri fileUri, Type type) {
         this.name = name;
@@ -48,6 +51,14 @@ public class GameInfo {
         return type;
     }
     
+    public Bitmap getIcon() {
+        return icon;
+    }
+    
+    public String getBundleIdentifier() {
+        return bundleIdentifier;
+    }
+    
     // Setters
     public void setName(String name) {
         this.name = name;
@@ -67,6 +78,14 @@ public class GameInfo {
     
     public void setType(Type type) {
         this.type = type;
+    }
+    
+    public void setIcon(Bitmap icon) {
+        this.icon = icon;
+    }
+    
+    public void setBundleIdentifier(String bundleIdentifier) {
+        this.bundleIdentifier = bundleIdentifier;
     }
     
     @Override
