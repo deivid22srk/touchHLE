@@ -87,7 +87,7 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
         let mut obj_dict = Dictionary::new();
         obj_dict.insert(
             "$class".to_string(),
-            Value::Uid(Uid::new((class_uid as u64).try_into().unwrap())),
+            Value::Uid(Uid::new(class_uid)),
         );
 
         for value in obj.values(nib.values()) {
@@ -98,15 +98,15 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
                 ValueVariant::Int32(v) => Value::Integer((*v as i64).into()),
                 ValueVariant::Int64(v) => Value::Integer((*v).into()),
                 ValueVariant::Bool(v) => Value::Boolean(*v),
-                ValueVariant::Float(v) => Value::Real((*v as f64).into()),
-                ValueVariant::Double(v) => Value::Real((*v).into()),
+                ValueVariant::Float(v) => Value::Real(*v as f64),
+                ValueVariant::Double(v) => Value::Real(*v),
                 ValueVariant::Data(v) => Value::Data(v.clone()),
                 ValueVariant::Nil => {
                     obj_dict.insert(key.to_string(), Value::Uid(Uid::new(0)));
                     continue;
                 }
                 ValueVariant::ObjectRef(idx) => {
-                    Value::Uid(Uid::new((*idx as u64 + 1).try_into().unwrap()))
+                    Value::Uid(Uid::new(*idx as u64 + 1))
                 }
             };
             obj_dict.insert(key.to_string(), val);
@@ -124,7 +124,7 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
     root.insert("$objects".to_string(), Value::Array(objects));
 
     let mut top = Dictionary::new();
-    if nib.objects().len() > 0 {
+    if !nib.objects().is_empty() {
         top.insert("UINibEncoderEmptyKey".to_string(), Value::Uid(Uid::new(1)));
     }
     root.insert("$top".to_string(), Value::Dictionary(top));
