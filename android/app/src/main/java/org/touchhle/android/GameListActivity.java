@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -67,21 +68,21 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
     }
 
     private void initializeViews() {
-        androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        
+
         gamesRecyclerView = findViewById(R.id.gamesRecyclerView);
         gamesCountText = findViewById(R.id.gamesCountText);
         searchEditText = findViewById(R.id.searchEditText);
         emptyStateLayout = findViewById(R.id.emptyStateLayout);
         changeFolderButton = findViewById(R.id.changeFolderButton);
         fileManagerFab = findViewById(R.id.fileManagerFab);
-        
-        // Enable back button
+
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-        
+        toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+
         executorService = Executors.newCachedThreadPool();
     }
 
@@ -113,9 +114,6 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
         });
 
         fileManagerFab.setOnClickListener(v -> openFileManager());
-        
-        // Back button in toolbar
-        findViewById(R.id.toolbar).setOnClickListener(v -> onBackPressed());
     }
 
     private void scanForGames() {

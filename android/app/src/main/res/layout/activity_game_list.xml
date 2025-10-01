@@ -9,14 +9,14 @@
     tools:context=".GameListActivity">
 
     <!-- Toolbar -->
-    <androidx.appcompat.widget.Toolbar
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:theme="?attr/actionBarTheme"
+        android:background="?attr/colorSurface"
+        android:theme="@style/ThemeOverlay.MaterialComponents.ActionBar"
         app:title="@string/my_games"
-        app:navigationIcon="@android:drawable/ic_menu_revert" />
+        app:titleCentered="true" />
 
     <!-- Search Bar -->
     <com.google.android.material.card.MaterialCardView
