@@ -298,19 +298,23 @@ pub(super) fn UIApplicationMain(
         let delegate: id = msg![env; ui_application delegate];
         // iOS 3+ apps usually use application:didFinishLaunchingWithOptions:,
         // and it seems to be prioritized over applicationDidFinishLaunching:.
-        if env.objc.object_has_method_named(
-            &env.mem,
-            delegate,
-            "application:didFinishLaunchingWithOptions:",
-        ) {
-            let empty_dict: id = msg_class![env; NSDictionary dictionary];
-            () = msg![env; delegate application:ui_application didFinishLaunchingWithOptions:empty_dict];
-        } else if env.objc.object_has_method_named(
-            &env.mem,
-            delegate,
-            "applicationDidFinishLaunching:",
-        ) {
-            () = msg![env; delegate applicationDidFinishLaunching:ui_application];
+        if delegate != nil {
+            if env.objc.object_has_method_named(
+                &env.mem,
+                delegate,
+                "application:didFinishLaunchingWithOptions:",
+            ) {
+                let empty_dict: id = msg_class![env; NSDictionary dictionary];
+                () = msg![env; delegate application:ui_application didFinishLaunchingWithOptions:empty_dict];
+            } else if env.objc.object_has_method_named(
+                &env.mem,
+                delegate,
+                "applicationDidFinishLaunching:",
+            ) {
+                () = msg![env; delegate applicationDidFinishLaunching:ui_application];
+            }
+        } else {
+            log!("Warning: Skipping delegate launch methods because delegate is nil.");
         }
 
         let center: id = msg_class![env; NSNotificationCenter defaultCenter];
@@ -333,7 +337,7 @@ pub(super) fn UIApplicationMain(
     {
         let pool: id = msg_class![env; NSAutoreleasePool new];
         let delegate: id = msg![env; ui_application delegate];
-        if env
+        if delegate != nil && env
             .objc
             .object_has_method_named(&env.mem, delegate, "applicationDidBecomeActive:")
         {
@@ -379,7 +383,7 @@ pub(super) fn exit(env: &mut Environment) {
         }
 
         let delegate: id = msg![env; ui_application delegate];
-        if env
+        if delegate != nil && env
             .objc
             .object_has_method_named(&env.mem, delegate, "applicationWillResignActive:")
         {
@@ -395,7 +399,7 @@ pub(super) fn exit(env: &mut Environment) {
     {
         let pool: id = msg_class![env; NSAutoreleasePool new];
         let delegate: id = msg![env; ui_application delegate];
-        if env
+        if delegate != nil && env
             .objc
             .object_has_method_named(&env.mem, delegate, "applicationWillTerminate:")
         {
