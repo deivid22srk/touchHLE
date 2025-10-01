@@ -87,7 +87,7 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
         let mut obj_dict = Dictionary::new();
         obj_dict.insert(
             "$class".to_string(),
-            Value::Uid(Uid::new(class_uid)),
+            Value::Uid(Uid::new(class_uid as u64)),
         );
 
         for value in obj.values(nib.values()) {
