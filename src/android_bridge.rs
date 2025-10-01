@@ -3,7 +3,7 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 #[cfg(target_os = "android")]
 use jni::objects::{JClass, JString};
 #[cfg(target_os = "android")]
-use jni::sys::jstring;
+use jni::sys::{jobjectArray, jstring};
 #[cfg(target_os = "android")]
 use jni::JNIEnv;
 #[cfg(target_os = "android")]
@@ -30,6 +30,7 @@ use crate::image::Image;
 struct PendingLaunch {
     path: String,
     _display_name: String,
+    option_args: Vec<String>,
 }
 
 #[cfg(target_os = "android")]
@@ -39,12 +40,13 @@ fn pending_launch_slot() -> &'static Mutex<Option<PendingLaunch>> {
 }
 
 #[cfg(target_os = "android")]
-fn set_pending_launch(path: String, display_name: String) {
+fn set_pending_launch(path: String, display_name: String, option_args: Vec<String>) {
     let storage = pending_launch_slot();
     if let Ok(mut guard) = storage.lock() {
         *guard = Some(PendingLaunch {
             path,
             _display_name: display_name,
+            option_args,
         });
     } else {
         log!("Failed to acquire pending launch lock");
@@ -65,7 +67,13 @@ fn clear_pending_launch() {
 pub fn take_pending_launch_args() -> Option<Vec<String>> {
     let storage = pending_launch_slot();
     match storage.lock() {
-        Ok(mut guard) => guard.take().map(|launch| vec![String::new(), launch.path]),
+        Ok(mut guard) => guard.take().map(|launch| {
+            let mut args = Vec::with_capacity(launch.option_args.len() + 2);
+            args.push(String::new());
+            args.extend(launch.option_args);
+            args.push(launch.path);
+            args
+        }),
         Err(_) => {
             log!("Failed to lock pending launch state");
             None
@@ -80,6 +88,7 @@ pub extern "C" fn Java_org_touchhle_android_TouchHLENative_prepareLaunch(
     _class: JClass,
     path: JString,
     name: JString,
+    option_args: jobjectArray,
 ) {
     let path_res = env.get_string(&path);
     let name_res = env.get_string(&name);
@@ -87,7 +96,22 @@ pub extern "C" fn Java_org_touchhle_android_TouchHLENative_prepareLaunch(
         log!("Failed to retrieve launch parameters from Java");
         return;
     };
-    set_pending_launch(path.into(), name.into());
+
+    let mut options = Vec::new();
+    if !option_args.is_null() {
+        if let Ok(len) = env.get_array_length(option_args) {
+            for idx in 0..len {
+                if let Ok(element) = env.get_object_array_element(option_args, idx) {
+                    let element = JString::from(element);
+                    if let Ok(value) = env.get_string(&element) {
+                        options.push(value.into());
+                    }
+                }
+            }
+        }
+    }
+
+    set_pending_launch(path.into(), name.into(), options);
 }
 
 #[cfg(target_os = "android")]

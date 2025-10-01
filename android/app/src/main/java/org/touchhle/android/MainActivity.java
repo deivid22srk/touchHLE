@@ -54,7 +54,8 @@ public class MainActivity extends SDLActivity {
                         selectedGameName = (gameName != null && !gameName.trim().isEmpty())
                                 ? gameName
                                 : new File(tempGamePath).getName();
-                        TouchHLENative.prepareLaunch(tempGamePath, selectedGameName);
+                        String[] optionArgs = SettingsManager.buildOptionArgs(this);
+                        TouchHLENative.prepareLaunch(tempGamePath, selectedGameName, optionArgs);
                         Log.d(TAG, "Prepared game path: " + tempGamePath);
                     } else {
                         Log.e(TAG, "Unable to resolve path for URI: " + gameUriString);

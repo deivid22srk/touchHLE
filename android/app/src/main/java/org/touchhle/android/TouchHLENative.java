@@ -8,7 +8,7 @@ public final class TouchHLENative {
     private TouchHLENative() {
     }
 
-    public static native void prepareLaunch(String gamePath, String gameName);
+    public static native void prepareLaunch(String gamePath, String gameName, String[] optionArgs);
 
     public static native void clearLaunch();
 

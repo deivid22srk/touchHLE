@@ -333,6 +333,7 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
             scanForGames();
             return true;
         } else if (id == R.id.action_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
             return true;
         } else if (id == R.id.action_about) {
             return true;
