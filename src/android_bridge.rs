@@ -22,7 +22,7 @@ use std::sync::{Mutex, OnceLock};
 #[cfg(target_os = "android")]
 use crate::bundle::Bundle;
 #[cfg(target_os = "android")]
-use crate::fs::bundle::BundleData;
+use crate::fs::BundleData;
 #[cfg(target_os = "android")]
 use crate::image::Image;
 
