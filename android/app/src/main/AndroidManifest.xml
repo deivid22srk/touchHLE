@@ -90,6 +90,12 @@
             android:exported="false"
             android:theme="@style/AppTheme" />
 
+        <!-- Settings activity -->
+        <activity
+            android:name="org.touchhle.android.SettingsActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme" />
+
         <!-- Emulator activity (SDL-based) -->
         <activity
             android:name="org.touchhle.android.MainActivity"

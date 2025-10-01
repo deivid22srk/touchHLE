@@ -5,6 +5,7 @@
  */
 package org.touchhle.android;
 
+import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -79,8 +80,12 @@ public class GameAdapter extends RecyclerView.Adapter<GameAdapter.GameViewHolder
             gameVersionTextView.setText(game.getVersion());
             gameSizeTextView.setText(game.getSize());
             
-            // Set game icon (for now use default, could extract from .ipa/.app later)
-            gameIconImageView.setImageResource(R.drawable.icon);
+            Bitmap icon = game.getIcon();
+            if (icon != null) {
+                gameIconImageView.setImageBitmap(icon);
+            } else {
+                gameIconImageView.setImageResource(R.drawable.icon);
+            }
             
             // Set status based on game type
             if (game.getType() == GameInfo.Type.IPA) {
