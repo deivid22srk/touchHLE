@@ -1,7 +1,7 @@
 #[cfg(target_os = "android")]
 use base64::{engine::general_purpose::STANDARD, Engine};
 #[cfg(target_os = "android")]
-use jni::objects::{JClass, JString};
+use jni::objects::{JClass, JString, JObjectArray};
 #[cfg(target_os = "android")]
 use jni::sys::{jobjectArray, jstring};
 #[cfg(target_os = "android")]
@@ -99,9 +99,10 @@ pub extern "C" fn Java_org_touchhle_android_TouchHLENative_prepareLaunch(
 
     let mut options = Vec::new();
     if !option_args.is_null() {
-        if let Ok(len) = env.get_array_length(option_args) {
+        let option_array = unsafe { JObjectArray::from_raw(option_args) };
+        if let Ok(len) = env.get_array_length(&option_array) {
             for idx in 0..len {
-                if let Ok(element) = env.get_object_array_element(option_args, idx) {
+                if let Ok(element) = env.get_object_array_element(&option_array, idx) {
                     let element = JString::from(element);
                     if let Ok(value) = env.get_string(&element) {
                         options.push(value.into());
@@ -109,6 +110,7 @@ pub extern "C" fn Java_org_touchhle_android_TouchHLENative_prepareLaunch(
                 }
             }
         }
+        let _ = option_array.into_raw();
     }
 
     set_pending_launch(path.into(), name.into(), options);
