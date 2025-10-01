@@ -49,8 +49,18 @@ struct NSKeyedUnarchiverHostObject {
 impl HostObject for NSKeyedUnarchiverHostObject {}
 
 fn parse_value_from_slice(slice: &[u8]) -> Result<Value, Error> {
-    Value::from_reader(Cursor::new(slice))
-        .or_else(|binary_err| Value::from_reader_xml(Cursor::new(slice)).or(Err(binary_err)))
+    if slice.is_empty() {
+        return Err(Error::InvalidData);
+    }
+    
+    if slice.starts_with(b"bplist") {
+        Value::from_reader(Cursor::new(slice))
+    } else if slice.starts_with(b"<?xml") || slice.starts_with(b"<plist") {
+        Value::from_reader_xml(Cursor::new(slice))
+    } else {
+        Value::from_reader(Cursor::new(slice))
+            .or_else(|binary_err| Value::from_reader_xml(Cursor::new(slice)).or(Err(binary_err)))
+    }
 }
 
 fn parse_keyed_archive(slice: &[u8]) -> Result<Value, Error> {
@@ -171,13 +181,69 @@ pub const CLASSES: ClassExports = objc_classes! {
     assert!(host_obj.current_key.is_none());
     assert!(host_obj.plist.is_empty());
 
-    let plist = parse_keyed_archive(slice)
-        .unwrap_or_else(|err| panic!("Failed to parse keyed archive: {}", err));
-    let plist = plist.into_dictionary().unwrap();
-    assert!(plist["$version"].as_unsigned_integer() == Some(100000));
-    assert!(plist["$archiver"].as_string() == Some("NSKeyedArchiver"));
+    if slice.is_empty() {
+        log!("NSKeyedUnarchiver: Warning: Attempting to parse empty data");
+        release(env, this);
+        return nil;
+    }
 
-    let key_count = plist["$objects"].as_array().unwrap().len();
+    let format_hint = if slice.len() >= 6 {
+        if slice.starts_with(b"bplist") {
+            "binary plist"
+        } else if slice.starts_with(b"<?xml") {
+            "XML plist"
+        } else if slice.starts_with(b"\x1f\x8b") {
+            "gzip compressed"
+        } else if slice.starts_with(b"\x78\x9c") || slice.starts_with(b"\x78\xda") {
+            "zlib compressed"
+        } else if slice.starts_with(b"PK\x03\x04") {
+            "zip archive"
+        } else {
+            "unknown format"
+        }
+    } else {
+        "data too short"
+    };
+
+    let plist = match parse_keyed_archive(slice) {
+        Ok(plist) => plist,
+        Err(err) => {
+            log!("NSKeyedUnarchiver: Failed to parse keyed archive (detected format: {}): {}", format_hint, err);
+            log!("NSKeyedUnarchiver: Data length: {} bytes, first 16 bytes: {:?}", 
+                 slice.len(), 
+                 &slice[..slice.len().min(16)]);
+            release(env, this);
+            return nil;
+        }
+    };
+    
+    let Some(plist) = plist.into_dictionary() else {
+        log!("NSKeyedUnarchiver: Warning: Root plist value is not a dictionary");
+        release(env, this);
+        return nil;
+    };
+    
+    if plist.get("$version").and_then(|v| v.as_unsigned_integer()) != Some(100000) {
+        log!("NSKeyedUnarchiver: Warning: Unexpected archive version: {:?}", 
+             plist.get("$version"));
+        release(env, this);
+        return nil;
+    }
+    
+    if plist.get("$archiver").and_then(|v| v.as_string()) != Some("NSKeyedArchiver") {
+        log!("NSKeyedUnarchiver: Warning: Unexpected archiver: {:?}", 
+             plist.get("$archiver"));
+        release(env, this);
+        return nil;
+    }
+
+    let Some(objects) = plist.get("$objects").and_then(|v| v.as_array()) else {
+        log!("NSKeyedUnarchiver: Warning: $objects is missing or not an array");
+        release(env, this);
+        return nil;
+    };
+    
+    let key_count = objects.len();
 
     host_obj.already_unarchived = vec![None; key_count];
     host_obj.plist = plist;
