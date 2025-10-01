@@ -50,7 +50,7 @@ impl HostObject for NSKeyedUnarchiverHostObject {}
 
 fn parse_value_from_slice(slice: &[u8]) -> Result<Value, Error> {
     if slice.is_empty() {
-        return Err(Error::InvalidData);
+        return Value::from_reader_xml(Cursor::new(b""));
     }
     
     if slice.starts_with(b"bplist") {
