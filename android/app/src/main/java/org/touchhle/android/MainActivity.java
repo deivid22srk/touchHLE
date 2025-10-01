@@ -11,6 +11,7 @@ package org.touchhle.android;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
 import android.util.Log;
 
 import androidx.documentfile.provider.DocumentFile;
@@ -19,6 +20,7 @@ import org.libsdl.app.SDLActivity;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -27,7 +29,7 @@ import java.io.InputStream;
 public class MainActivity extends SDLActivity {
     
     private static final String TAG = "MainActivity";
-    private static final String TEMP_DIR = "temp_games";
+    private static final String CACHE_DIR = "runtime_games";
 
     private File tempGameFile;
     private String tempGamePath;
@@ -45,15 +47,13 @@ public class MainActivity extends SDLActivity {
                 Log.d(TAG, "Received game name: " + gameName);
                 
                 try {
-                    // Copy the game file to internal storage so touchHLE can access it
-                    String gamePath = copyGameToInternalStorage(Uri.parse(gameUriString), gameName);
-                    
+                    String gamePath = resolveGamePath(Uri.parse(gameUriString));
+
                     if (gamePath != null) {
                         tempGamePath = gamePath;
-                        tempGameFile = new File(gamePath);
                         Log.d(TAG, "Prepared game path: " + gamePath);
                     } else {
-                        Log.e(TAG, "Failed to copy game to internal storage");
+                        Log.e(TAG, "Failed to resolve game path");
                         finish();
                         return;
                     }
@@ -88,50 +88,123 @@ public class MainActivity extends SDLActivity {
         return new String[0];
     }
     
-    private String copyGameToInternalStorage(Uri gameUri, String gameName) {
-        try {
+    private String resolveGamePath(Uri gameUri) {
+        if (gameUri == null) {
+            return null;
+        }
+
+        if ("file".equalsIgnoreCase(gameUri.getScheme())) {
+            File file = new File(gameUri.getPath());
+            if (file.exists()) {
+                return file.getAbsolutePath();
+            }
+            Log.e(TAG, "File URI does not exist: " + gameUri);
+            return null;
+        }
+
+        if ("content".equalsIgnoreCase(gameUri.getScheme())) {
             DocumentFile gameFile = DocumentFile.fromSingleUri(this, gameUri);
             if (gameFile == null || !gameFile.exists()) {
                 Log.e(TAG, "Game file does not exist or is not accessible");
                 return null;
             }
-            
-            // Create a temporary file in internal storage
-            File internalDir = new File(getFilesDir(), TEMP_DIR);
-            internalDir.mkdirs();
-            
-            String fileName = gameFile.getName();
-            if (fileName == null) {
-                fileName = gameName + ".app"; // fallback
-            }
-            
-            File tempFile = new File(internalDir, fileName);
-            
-            // Copy the content
-            try (InputStream inputStream = getContentResolver().openInputStream(gameUri);
-                 FileOutputStream outputStream = new FileOutputStream(tempFile)) {
-                
-                if (inputStream == null) {
-                    Log.e(TAG, "Could not open input stream for game file");
-                    return null;
+
+            String absolutePath = resolveDocumentFilePath(gameFile);
+            if (absolutePath != null) {
+                File candidate = new File(absolutePath);
+                if (candidate.exists() && candidate.canRead()) {
+                    return candidate.getAbsolutePath();
                 }
-                
+                Log.w(TAG, "Resolved path inaccessible, falling back to cached copy: " + absolutePath);
+            }
+
+            String cached = copyDocumentToCache(gameFile);
+            if (cached != null) {
+                return cached;
+            }
+            Log.e(TAG, "Content URI could not be cached: " + gameUri);
+            return null;
+        }
+
+        Log.e(TAG, "Unsupported URI scheme: " + gameUri.getScheme());
+        return null;
+    }
+
+    private String resolveDocumentFilePath(DocumentFile documentFile) {
+        Uri uri = documentFile.getUri();
+        if (!DocumentsContract.isDocumentUri(this, uri)) {
+            return null;
+        }
+
+        try {
+            String documentId = DocumentsContract.getDocumentId(uri);
+            if (documentId == null) {
+                return null;
+            }
+
+            File baseDir = getExternalFilesDir(null);
+            if (baseDir == null) {
+                return null;
+            }
+
+            String root = org.touchhle.android.DocumentsProvider.ROOT_ID;
+            if (documentId.equals(root)) {
+                return baseDir.getAbsolutePath();
+            }
+
+            String prefix = root + "/";
+            if (documentId.startsWith(prefix)) {
+                String relative = documentId.substring(prefix.length());
+                File target = new File(baseDir, relative);
+                if (target.exists()) {
+                    return target.getAbsolutePath();
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Failed to parse document URI: " + uri, e);
+        }
+        return null;
+    }
+
+    private String copyDocumentToCache(DocumentFile documentFile) {
+        try (InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri())) {
+            if (inputStream == null) {
+                return null;
+            }
+            File cacheDir = new File(getCacheDir(), CACHE_DIR);
+            if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+                Log.e(TAG, "Failed to create cache directory: " + cacheDir.getAbsolutePath());
+                return null;
+            }
+
+            String fileName = documentFile.getName();
+            if (fileName == null || fileName.trim().isEmpty()) {
+                fileName = "touchhle_game";
+            }
+            File tempFile = File.createTempFile("game_", "_" + fileName, cacheDir);
+
+            try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer, 0, bytesRead);
                 }
+                outputStream.flush();
             }
-            
-            Log.d(TAG, "Copied game file to: " + tempFile.getAbsolutePath());
+
+            if (tempGameFile != null && tempGameFile.exists()) {
+                // delete previous cache to avoid leaks
+                // ignoring result intentionally
+                tempGameFile.delete();
+            }
+            tempGameFile = tempFile;
             return tempFile.getAbsolutePath();
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error copying game to internal storage: " + e.getMessage(), e);
-            return null;
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to cache document: " + documentFile.getName(), e);
         }
+        return null;
     }
-    
+
     @Override
     protected void onDestroy() {
         cleanUpTempGame();
@@ -140,10 +213,8 @@ public class MainActivity extends SDLActivity {
 
     private void cleanUpTempGame() {
         if (tempGameFile != null && tempGameFile.exists()) {
-            if (tempGameFile.delete()) {
-                Log.d(TAG, "Cleaned up temporary game file: " + tempGameFile.getAbsolutePath());
-            } else {
-                Log.w(TAG, "Could not delete temporary game file: " + tempGameFile.getAbsolutePath());
+            if (!tempGameFile.delete()) {
+                Log.w(TAG, "Failed to delete cached game: " + tempGameFile.getAbsolutePath());
             }
         }
         tempGameFile = null;

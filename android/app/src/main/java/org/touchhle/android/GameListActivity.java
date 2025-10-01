@@ -8,6 +8,13 @@ package org.touchhle.android;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
@@ -55,6 +62,16 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
     
     private Uri folderUri;
     private ExecutorService executorService;
+
+    private static class IconCandidate {
+        final Bitmap bitmap;
+        final int score;
+
+        IconCandidate(Bitmap bitmap, int score) {
+            this.bitmap = bitmap;
+            this.score = score;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -213,9 +230,22 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
         if (name == null) {
             return null;
         }
+
         String lower = name.toLowerCase(Locale.ROOT);
-        if (lower.endsWith(".ipa")) {
-            return loadIconFromIpa(file);
+        Bitmap icon = null;
+
+        if (file.isDirectory() || lower.endsWith(".app")) {
+            icon = loadIconFromAppBundle(file, 0, 2);
+        } else if (lower.endsWith(".ipa")) {
+            icon = loadIconFromIpa(file);
+        }
+
+        if (icon != null) {
+            Bitmap styled = applyIconStyling(icon);
+            if (styled != icon) {
+                icon.recycle();
+            }
+            return styled;
         }
         return null;
     }
@@ -224,8 +254,7 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
         try (InputStream inputStream = getContentResolver().openInputStream(file.getUri());
              ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
             ZipEntry entry;
-            Bitmap bestIcon = null;
-            int bestScore = -1;
+            IconCandidate best = null;
             byte[] buffer = new byte[8192];
 
             while ((entry = zipInputStream.getNextEntry()) != null) {
@@ -261,22 +290,9 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
                         imageBytes.write(buffer, 0, read);
                     }
 
-                    byte[] data = imageBytes.toByteArray();
-                    BitmapFactory.Options bounds = new BitmapFactory.Options();
-                    bounds.inJustDecodeBounds = true;
-                    BitmapFactory.decodeByteArray(data, 0, data.length, bounds);
-
-                    int score = bounds.outWidth * bounds.outHeight;
-                    if (score <= 0) {
-                        continue;
-                    }
-
-                    if (score > bestScore) {
-                        Bitmap candidate = BitmapFactory.decodeByteArray(data, 0, data.length);
-                        if (candidate != null) {
-                            bestIcon = candidate;
-                            bestScore = score;
-                        }
+                    IconCandidate candidate = decodeIconCandidate(imageBytes.toByteArray());
+                    if (candidate != null) {
+                        best = pickBetterIcon(best, candidate);
                     }
                 } catch (OutOfMemoryError error) {
                     Log.w(TAG, "Icon too large inside " + entry.getName(), error);
@@ -285,11 +301,145 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
                 }
             }
 
-            return bestIcon;
+            return best != null ? best.bitmap : null;
         } catch (IOException e) {
             Log.w(TAG, "Failed to load icon from " + file.getName(), e);
         }
         return null;
+    }
+
+    private Bitmap loadIconFromAppBundle(DocumentFile directory, int depth, int maxDepth) {
+        if (!directory.isDirectory()) {
+            return null;
+        }
+        IconCandidate best = traverseBundleForIcon(directory, depth, maxDepth, null);
+        return best != null ? best.bitmap : null;
+    }
+
+    private IconCandidate traverseBundleForIcon(DocumentFile directory, int depth, int maxDepth, IconCandidate currentBest) {
+        DocumentFile[] children = directory.listFiles();
+        if (children == null) {
+            return currentBest;
+        }
+        IconCandidate best = currentBest;
+        for (DocumentFile child : children) {
+            if (child.isDirectory()) {
+                if (depth < maxDepth) {
+                    best = traverseBundleForIcon(child, depth + 1, maxDepth, best);
+                }
+            } else {
+                String childName = child.getName();
+                if (childName == null) {
+                    continue;
+                }
+                String lowerName = childName.toLowerCase(Locale.ROOT);
+                boolean looksLikeIcon = lowerName.contains("appicon")
+                        || lowerName.contains("icon")
+                        || lowerName.contains("itunesartwork");
+                boolean supportedFormat = lowerName.endsWith(".png")
+                        || lowerName.endsWith(".jpg")
+                        || lowerName.endsWith(".jpeg");
+                if (!looksLikeIcon || !supportedFormat) {
+                    continue;
+                }
+                IconCandidate candidate = decodeIconCandidate(child);
+                if (candidate != null) {
+                    best = pickBetterIcon(best, candidate);
+                }
+            }
+        }
+        return best;
+    }
+
+    private IconCandidate decodeIconCandidate(DocumentFile file) {
+        try (InputStream inputStream = getContentResolver().openInputStream(file.getUri())) {
+            if (inputStream == null) {
+                return null;
+            }
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int read;
+            while ((read = inputStream.read(chunk)) != -1) {
+                buffer.write(chunk, 0, read);
+            }
+            return decodeIconCandidate(buffer.toByteArray());
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to decode icon file " + file.getName(), e);
+        }
+        return null;
+    }
+
+    private IconCandidate decodeIconCandidate(byte[] data) {
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(data, 0, data.length, bounds);
+        int width = bounds.outWidth;
+        int height = bounds.outHeight;
+        if (width <= 0 || height <= 0) {
+            return null;
+        }
+
+        BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+        int maxDimension = Math.max(width, height);
+        int sampleSize = 1;
+        while (maxDimension / sampleSize > 1024) {
+            sampleSize *= 2;
+        }
+        decodeOptions.inSampleSize = sampleSize;
+        decodeOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
+
+        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
+        if (bitmap == null) {
+            return null;
+        }
+        return new IconCandidate(bitmap, width * height);
+    }
+
+    private IconCandidate pickBetterIcon(IconCandidate current, IconCandidate candidate) {
+        if (candidate == null) {
+            return current;
+        }
+        if (current == null || candidate.score > current.score) {
+            if (current != null && current.bitmap != null && !current.bitmap.isRecycled()) {
+                current.bitmap.recycle();
+            }
+            return candidate;
+        } else {
+            if (candidate.bitmap != null && !candidate.bitmap.isRecycled()) {
+                candidate.bitmap.recycle();
+            }
+            return current;
+        }
+    }
+
+    private Bitmap applyIconStyling(Bitmap source) {
+        int width = source.getWidth();
+        int height = source.getHeight();
+        int size = Math.min(width, height);
+        if (size <= 0) {
+            return source;
+        }
+
+        Bitmap squared = Bitmap.createScaledBitmap(source, size, size, true);
+        Bitmap output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas(output);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Rect rect = new Rect(0, 0, size, size);
+        RectF rectF = new RectF(rect);
+        float radius = size * 0.23f;
+
+        paint.setColor(Color.WHITE);
+        canvas.drawRoundRect(rectF, radius, radius, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(squared, null, rect, paint);
+        paint.setXfermode(null);
+
+        if (squared != source && !squared.isRecycled()) {
+            squared.recycle();
+        }
+
+        return output;
     }
 
     private void filterGames(String query) {
