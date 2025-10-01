@@ -21,6 +21,7 @@ import android.webkit.MimeTypeMap
 //import emu.skyline.R
 //import emu.skyline.SkylineApplication
 //import emu.skyline.getPublicFilesDir
+import org.touchhle.android.BuildConfig
 import java.io.*
 
 class DocumentsProvider : DocumentsProvider() {

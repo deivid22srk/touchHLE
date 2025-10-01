@@ -19,8 +19,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -69,7 +67,7 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
     }
 
     private void initializeViews() {
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         
         gamesRecyclerView = findViewById(R.id.gamesRecyclerView);
@@ -252,6 +250,7 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate menu programmatically since we removed menu reference from layout
         getMenuInflater().inflate(R.menu.game_list_menu, menu);
         return true;
     }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="Theme.Material3.DayNight">
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight">
         <!-- Primary colors -->
         <item name="colorPrimary">@color/md_theme_light_primary</item>
         <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
@@ -12,12 +12,6 @@
         <item name="colorOnSecondary">@color/md_theme_light_onSecondary</item>
         <item name="colorSecondaryContainer">@color/md_theme_light_secondaryContainer</item>
         <item name="colorOnSecondaryContainer">@color/md_theme_light_onSecondaryContainer</item>
-        
-        <!-- Tertiary colors -->
-        <item name="colorTertiary">@color/md_theme_light_tertiary</item>
-        <item name="colorOnTertiary">@color/md_theme_light_onTertiary</item>
-        <item name="colorTertiaryContainer">@color/md_theme_light_tertiaryContainer</item>
-        <item name="colorOnTertiaryContainer">@color/md_theme_light_onTertiaryContainer</item>
         
         <!-- Error colors -->
         <item name="colorError">@color/md_theme_light_error</item>
@@ -39,21 +33,16 @@
         <item name="colorOutline">@color/md_theme_light_outline</item>
         <item name="colorOutlineVariant">@color/md_theme_light_outlineVariant</item>
         <item name="colorSurfaceTint">@color/md_theme_light_surfaceTint</item>
-        <item name="colorSurfaceInverse">@color/md_theme_light_inverseSurface</item>
-        <item name="colorOnSurfaceInverse">@color/md_theme_light_inverseOnSurface</item>
-        <item name="colorPrimaryInverse">@color/md_theme_light_inversePrimary</item>
         
         <!-- Status bar and navigation bar -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
     <style name="AppTheme.Gaming" parent="AppTheme">
         <item name="colorPrimary">@color/gaming_primary</item>
         <item name="colorSecondary">@color/gaming_secondary</item>
-        <item name="colorTertiary">@color/gaming_accent</item>
     </style>
 
     <style name="AppTheme.SplashScreen" parent="AppTheme">

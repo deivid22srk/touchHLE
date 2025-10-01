@@ -10,11 +10,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.android.material.button.MaterialButton;
 
 import java.util.List;
 
@@ -60,7 +59,7 @@ public class GameAdapter extends RecyclerView.Adapter<GameAdapter.GameViewHolder
         private TextView gameSizeTextView;
         private ImageView statusIcon;
         private TextView statusTextView;
-        private MaterialButton gameMenuButton;
+        private ImageButton gameMenuButton;
         
         public GameViewHolder(@NonNull View itemView) {
             super(itemView);
