@@ -104,10 +104,12 @@ pub extern "C" fn Java_org_touchhle_android_TouchHLENative_prepareLaunch(
             for idx in 0..len {
                 if let Ok(element) = env.get_object_array_element(&option_array, idx) {
                     let element = JString::from(element);
-                    if let Ok(value) = env.get_string(&element).map(|v| v.into_owned()) {
+                    if let Ok(value) = env
+                        .get_string(&element)
+                        .map(|v| v.to_string_lossy().into_owned())
+                    {
                         options.push(value);
                     }
-                    let _ = env.delete_local_ref(element.into_inner());
                 }
             }
         }
