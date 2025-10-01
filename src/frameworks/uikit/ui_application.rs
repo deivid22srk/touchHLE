@@ -272,14 +272,18 @@ pub(super) fn UIApplicationMain(
                 .borrow_mut::<UIApplicationHostObject>(ui_application)
                 .delegate_is_retained = true;
             retain(env, delegate);
-        } else {
+        } else if delegate_class_name != nil {
             // We have to construct the delegate.
-            assert!(delegate_class_name != nil);
             let name = ns_string::to_rust_string(env, delegate_class_name);
             let class = env.objc.get_known_class(&name, &mut env.mem);
             let delegate: id = msg![env; class new];
             let _: () = msg![env; ui_application setDelegate:delegate];
             assert!(delegate != nil);
+        } else {
+            log!(
+                "Warning: No delegate found in main nib file and no delegate class name specified in Info.plist. \
+                 The app may not function correctly."
+            );
         };
         // We can't hang on to the delegate, the guest app may change it at any
         // time.
