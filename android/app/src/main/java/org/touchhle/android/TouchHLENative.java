@@ -11,4 +11,6 @@ public final class TouchHLENative {
     public static native void prepareLaunch(String gamePath, String gameName);
 
     public static native void clearLaunch();
+
+    public static native String inspectBundle(String absolutePath);
 }

@@ -1,10 +1,30 @@
 #[cfg(target_os = "android")]
+use base64::{engine::general_purpose::STANDARD, Engine};
+#[cfg(target_os = "android")]
 use jni::objects::{JClass, JString};
 #[cfg(target_os = "android")]
+use jni::sys::jstring;
+#[cfg(target_os = "android")]
 use jni::JNIEnv;
-
+#[cfg(target_os = "android")]
+use png::{BitDepth, ColorType, Encoder};
+#[cfg(target_os = "android")]
+use serde::Serialize;
+#[cfg(target_os = "android")]
+use std::panic;
+#[cfg(target_os = "android")]
+use std::path::Path;
+#[cfg(target_os = "android")]
+use std::ptr;
 #[cfg(target_os = "android")]
 use std::sync::{Mutex, OnceLock};
+
+#[cfg(target_os = "android")]
+use crate::bundle::Bundle;
+#[cfg(target_os = "android")]
+use crate::fs::bundle::BundleData;
+#[cfg(target_os = "android")]
+use crate::image::Image;
 
 #[cfg(target_os = "android")]
 struct PendingLaunch {
@@ -56,7 +76,7 @@ pub fn take_pending_launch_args() -> Option<Vec<String>> {
 #[cfg(target_os = "android")]
 #[no_mangle]
 pub extern "C" fn Java_org_touchhle_android_TouchHLENative_prepareLaunch(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     path: JString,
     name: JString,
@@ -77,4 +97,104 @@ pub extern "C" fn Java_org_touchhle_android_TouchHLENative_clearLaunch(
     _class: JClass,
 ) {
     clear_pending_launch();
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "C" fn Java_org_touchhle_android_TouchHLENative_inspectBundle(
+    mut env: JNIEnv,
+    _class: JClass,
+    path: JString,
+) -> jstring {
+    let path_res = env.get_string(&path);
+    let Ok(path_jni) = path_res else {
+        log!("Failed to read bundle path from Java");
+        return ptr::null_mut();
+    };
+    let path: String = path_jni.into();
+
+    let json = match inspect_bundle_impl(&path) {
+        Ok(json) => json,
+        Err(err) => {
+            log!("Failed to inspect bundle {path}: {err}");
+            return ptr::null_mut();
+        }
+    };
+
+    match env.new_string(json) {
+        Ok(result) => result.into_raw(),
+        Err(e) => {
+            log!("Failed to create Java string: {e:?}");
+            ptr::null_mut()
+        }
+    }
+}
+
+#[cfg(target_os = "android")]
+#[derive(Serialize)]
+struct AppInspection {
+    display_name: String,
+    version: String,
+    bundle_identifier: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    minimum_os_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon_png: Option<String>,
+}
+
+#[cfg(target_os = "android")]
+fn inspect_bundle_impl(path: &str) -> Result<String, String> {
+    let bundle_path = Path::new(path);
+    let bundle_data = BundleData::open_any(bundle_path)?;
+    let (bundle, fs) = Bundle::new_bundle_and_fs_from_host_path(bundle_data, true)?;
+
+    let display_name = panic::catch_unwind(|| bundle.display_name().to_owned())
+        .unwrap_or_else(|_| bundle.bundle_name().to_owned());
+    let version = panic::catch_unwind(|| bundle.bundle_version().to_owned())
+        .unwrap_or_else(|_| "".to_owned());
+    let bundle_identifier = panic::catch_unwind(|| bundle.bundle_identifier().to_owned())
+        .unwrap_or_else(|_| "".to_owned());
+    let minimum_os_version = bundle.minimum_os_version().map(|s| s.to_owned());
+
+    let icon_png = match bundle.load_icon(&fs) {
+        Ok(image) => match image_to_png_bytes(&image) {
+            Ok(bytes) => Some(STANDARD.encode(bytes)),
+            Err(e) => {
+                log!("Failed to encode icon for {}: {}", path, e);
+                None
+            }
+        },
+        Err(e) => {
+            log!("Failed to load icon for {}: {}", path, e);
+            None
+        }
+    };
+
+    let metadata = AppInspection {
+        display_name,
+        version,
+        bundle_identifier,
+        minimum_os_version,
+        icon_png,
+    };
+
+    serde_json::to_string(&metadata).map_err(|e| e.to_string())
+}
+
+#[cfg(target_os = "android")]
+fn image_to_png_bytes(image: &Image) -> Result<Vec<u8>, String> {
+    let (width, height) = image.dimensions();
+    let mut buffer = Vec::new();
+    {
+        let mut encoder = Encoder::new(&mut buffer, width, height);
+        encoder.set_color(ColorType::Rgba);
+        encoder.set_depth(BitDepth::Eight);
+        let mut writer = encoder
+            .write_header()
+            .map_err(|e| format!("Failed to write PNG header: {e}"))?;
+        writer
+            .write_image_data(image.pixels())
+            .map_err(|e| format!("Failed to write PNG data: {e}"))?;
+    }
+    Ok(buffer)
 }

@@ -27,9 +27,9 @@
 
 #[macro_use]
 mod log;
+mod abi;
 #[cfg(target_os = "android")]
 mod android_bridge;
-mod abi;
 mod app_picker;
 mod audio;
 mod bundle;
@@ -92,8 +92,8 @@ pub extern "C" fn SDL_main(
 
     // Empty args: brings up app picker.
     #[cfg(target_os = "android")]
-    let args_vec = crate::android_bridge::take_pending_launch_args()
-        .unwrap_or_else(|| vec![String::new()]);
+    let args_vec =
+        crate::android_bridge::take_pending_launch_args().unwrap_or_else(|| vec![String::new()]);
     #[cfg(not(target_os = "android"))]
     let args_vec = vec![String::new()];
 

@@ -20,6 +20,7 @@ public class GameInfo {
     private Uri fileUri;
     private Type type;
     private Bitmap icon;
+    private String bundleIdentifier;
     
     public GameInfo(String name, String version, String size, Uri fileUri, Type type) {
         this.name = name;
@@ -54,6 +55,10 @@ public class GameInfo {
         return icon;
     }
     
+    public String getBundleIdentifier() {
+        return bundleIdentifier;
+    }
+    
     // Setters
     public void setName(String name) {
         this.name = name;
@@ -77,6 +82,10 @@ public class GameInfo {
     
     public void setIcon(Bitmap icon) {
         this.icon = icon;
+    }
+    
+    public void setBundleIdentifier(String bundleIdentifier) {
+        this.bundleIdentifier = bundleIdentifier;
     }
     
     @Override
