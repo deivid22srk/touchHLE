@@ -61,23 +61,44 @@
         android:hardwareAccelerated="true"
         android:icon="${icon}"
         android:label="@string/app_name"
-        android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+        android:theme="@style/AppTheme">
 
         <!-- Example of setting SDL hints from AndroidManifest.xml:
         <meta-data android:name="SDL_ENV.SDL_ACCELEROMETER_AS_JOYSTICK" android:value="0"/>
          -->
 
+        <!-- Main launcher activity -->
         <activity
-            android:name="org.touchhle.android.MainActivity"
-            android:alwaysRetainTaskState="true"
-            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:name="org.touchhle.android.LaunchActivity"
             android:exported="true"
-            android:launchMode="singleInstance"
-            android:preferMinimalPostProcessing="true">
+            android:theme="@style/AppTheme.SplashScreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <!-- Folder selector activity -->
+        <activity
+            android:name="org.touchhle.android.FolderSelectorActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme" />
+
+        <!-- Game list activity -->
+        <activity
+            android:name="org.touchhle.android.GameListActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme" />
+
+        <!-- Emulator activity (SDL-based) -->
+        <activity
+            android:name="org.touchhle.android.MainActivity"
+            android:alwaysRetainTaskState="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:preferMinimalPostProcessing="true"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
             <!-- Let Android know that we can handle some USB devices and should receive this event -->
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
