@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">touchHLE</string>
+    <string name="select_games_folder">Selecionar Pasta de Jogos</string>
+    <string name="games_folder_description">Escolha onde estão seus arquivos .ipa ou .app</string>
+    <string name="browse_folder">Navegar</string>
+    <string name="folder_manager">Gerenciador de Arquivos</string>
+    <string name="no_folder_selected">Nenhuma pasta selecionada</string>
+    <string name="folder_selected">Pasta selecionada: %s</string>
+    <string name="continue_button">Continuar</string>
+    <string name="my_games">Meus Jogos</string>
+    <string name="search_games">Buscar jogos</string>
+    <string name="no_games_found">Nenhum jogo encontrado</string>
+    <string name="games_found">%d jogos encontrados</string>
+    <string name="scanning_games">Procurando jogos...</string>
+    <string name="tap_to_play">Toque para jogar</string>
+    <string name="game_info">Informações do jogo</string>
+    <string name="settings">Configurações</string>
+    <string name="about">Sobre</string>
+    <string name="file_manager">Gerenciar Arquivos</string>
+    <string name="change_folder">Mudar Pasta</string>
+    <string name="refresh">Atualizar</string>
+</resources>
