@@ -6,10 +6,13 @@
 package org.touchhle.android;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,12 +27,20 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class GameListActivity extends AppCompatActivity implements GameAdapter.OnGameClickListener {
+
+    private static final String TAG = "GameListActivity";
 
     private RecyclerView gamesRecyclerView;
     private TextView gamesCountText;
@@ -179,13 +190,15 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
         long sizeBytes = file.length();
         String sizeString = formatFileSize(sizeBytes);
         
-        return new GameInfo(
+        GameInfo gameInfo = new GameInfo(
             gameName,
             "Unknown Version", // We'd need to parse the bundle for real version
             sizeString,
             file.getUri(),
             fileName.toLowerCase().endsWith(".ipa") ? GameInfo.Type.IPA : GameInfo.Type.APP
         );
+        gameInfo.setIcon(loadGameIcon(file));
+        return gameInfo;
     }
 
     private String formatFileSize(long bytes) {
@@ -193,6 +206,90 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
         int exp = (int) (Math.log(bytes) / Math.log(1024));
         String pre = "KMGTPE".charAt(exp - 1) + "";
         return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
+    }
+
+    private Bitmap loadGameIcon(DocumentFile file) {
+        String name = file.getName();
+        if (name == null) {
+            return null;
+        }
+        String lower = name.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".ipa")) {
+            return loadIconFromIpa(file);
+        }
+        return null;
+    }
+
+    private Bitmap loadIconFromIpa(DocumentFile file) {
+        try (InputStream inputStream = getContentResolver().openInputStream(file.getUri());
+             ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+            ZipEntry entry;
+            Bitmap bestIcon = null;
+            int bestScore = -1;
+            byte[] buffer = new byte[8192];
+
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                try {
+                    if (entry.isDirectory()) {
+                        continue;
+                    }
+
+                    String entryName = entry.getName();
+                    if (entryName == null) {
+                        continue;
+                    }
+
+                    String lowerEntry = entryName.toLowerCase(Locale.ROOT);
+                    if (!lowerEntry.contains(".app/")) {
+                        continue;
+                    }
+
+                    boolean looksLikeIcon = lowerEntry.contains("appicon")
+                            || lowerEntry.contains("icon")
+                            || lowerEntry.contains("itunesartwork");
+                    boolean supportedFormat = lowerEntry.endsWith(".png")
+                            || lowerEntry.endsWith(".jpg")
+                            || lowerEntry.endsWith(".jpeg");
+
+                    if (!looksLikeIcon || !supportedFormat) {
+                        continue;
+                    }
+
+                    ByteArrayOutputStream imageBytes = new ByteArrayOutputStream();
+                    int read;
+                    while ((read = zipInputStream.read(buffer)) != -1) {
+                        imageBytes.write(buffer, 0, read);
+                    }
+
+                    byte[] data = imageBytes.toByteArray();
+                    BitmapFactory.Options bounds = new BitmapFactory.Options();
+                    bounds.inJustDecodeBounds = true;
+                    BitmapFactory.decodeByteArray(data, 0, data.length, bounds);
+
+                    int score = bounds.outWidth * bounds.outHeight;
+                    if (score <= 0) {
+                        continue;
+                    }
+
+                    if (score > bestScore) {
+                        Bitmap candidate = BitmapFactory.decodeByteArray(data, 0, data.length);
+                        if (candidate != null) {
+                            bestIcon = candidate;
+                            bestScore = score;
+                        }
+                    }
+                } catch (OutOfMemoryError error) {
+                    Log.w(TAG, "Icon too large inside " + entry.getName(), error);
+                } finally {
+                    zipInputStream.closeEntry();
+                }
+            }
+
+            return bestIcon;
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to load icon from " + file.getName(), e);
+        }
+        return null;
     }
 
     private void filterGames(String query) {

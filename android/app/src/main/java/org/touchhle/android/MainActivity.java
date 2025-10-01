@@ -27,6 +27,10 @@ import java.io.InputStream;
 public class MainActivity extends SDLActivity {
     
     private static final String TAG = "MainActivity";
+    private static final String TEMP_DIR = "temp_games";
+
+    private File tempGameFile;
+    private String tempGamePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,9 +49,9 @@ public class MainActivity extends SDLActivity {
                     String gamePath = copyGameToInternalStorage(Uri.parse(gameUriString), gameName);
                     
                     if (gamePath != null) {
-                        // Set the game path in the native code
-                        TouchHLENative.setGamePath(gamePath, gameName);
-                        Log.d(TAG, "Set game path: " + gamePath);
+                        tempGamePath = gamePath;
+                        tempGameFile = new File(gamePath);
+                        Log.d(TAG, "Prepared game path: " + gamePath);
                     } else {
                         Log.e(TAG, "Failed to copy game to internal storage");
                         finish();
@@ -75,6 +79,14 @@ public class MainActivity extends SDLActivity {
             "touchHLE"
         };
     }
+
+    @Override
+    protected String[] getArguments() {
+        if (tempGamePath != null) {
+            return new String[]{tempGamePath};
+        }
+        return new String[0];
+    }
     
     private String copyGameToInternalStorage(Uri gameUri, String gameName) {
         try {
@@ -85,7 +97,7 @@ public class MainActivity extends SDLActivity {
             }
             
             // Create a temporary file in internal storage
-            File internalDir = new File(getFilesDir(), "temp_games");
+            File internalDir = new File(getFilesDir(), TEMP_DIR);
             internalDir.mkdirs();
             
             String fileName = gameFile.getName();
@@ -122,22 +134,19 @@ public class MainActivity extends SDLActivity {
     
     @Override
     protected void onDestroy() {
-        // Clean up the temporary game file
-        try {
-            if (TouchHLENative.hasGamePath()) {
-                String gamePath = TouchHLENative.getGamePath();
-                if (gamePath != null) {
-                    File gameFile = new File(gamePath);
-                    if (gameFile.exists() && gameFile.delete()) {
-                        Log.d(TAG, "Cleaned up temporary game file: " + gamePath);
-                    }
-                }
-                TouchHLENative.clearGamePath();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error cleaning up: " + e.getMessage());
-        }
-        
+        cleanUpTempGame();
         super.onDestroy();
+    }
+
+    private void cleanUpTempGame() {
+        if (tempGameFile != null && tempGameFile.exists()) {
+            if (tempGameFile.delete()) {
+                Log.d(TAG, "Cleaned up temporary game file: " + tempGameFile.getAbsolutePath());
+            } else {
+                Log.w(TAG, "Could not delete temporary game file: " + tempGameFile.getAbsolutePath());
+            }
+        }
+        tempGameFile = null;
+        tempGamePath = null;
     }
 }
