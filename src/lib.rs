@@ -27,6 +27,8 @@
 
 #[macro_use]
 mod log;
+#[cfg(target_os = "android")]
+mod android_bridge;
 mod abi;
 mod app_picker;
 mod audio;
@@ -89,7 +91,13 @@ pub extern "C" fn SDL_main(
     }));
 
     // Empty args: brings up app picker.
-    match main([String::new()].into_iter()) {
+    #[cfg(target_os = "android")]
+    let args_vec = crate::android_bridge::take_pending_launch_args()
+        .unwrap_or_else(|| vec![String::new()]);
+    #[cfg(not(target_os = "android"))]
+    let args_vec = vec![String::new()];
+
+    match main(args_vec.into_iter()) {
         Ok(_) => echo!("touchHLE finished"),
         Err(e) => echo!("touchHLE errored: {e:?}"),
     }

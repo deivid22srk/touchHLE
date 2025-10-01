@@ -33,6 +33,7 @@ public class MainActivity extends SDLActivity {
 
     private File tempGameFile;
     private String tempGamePath;
+    private String selectedGameName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,19 +52,28 @@ public class MainActivity extends SDLActivity {
 
                     if (gamePath != null) {
                         tempGamePath = gamePath;
+                        if (gameName == null || gameName.trim().isEmpty()) {
+                            selectedGameName = new File(gamePath).getName();
+                        } else {
+                            selectedGameName = gameName;
+                        }
+                        TouchHLENative.prepareLaunch(tempGamePath, selectedGameName);
                         Log.d(TAG, "Prepared game path: " + gamePath);
                     } else {
                         Log.e(TAG, "Failed to resolve game path");
+                        TouchHLENative.clearLaunch();
                         finish();
                         return;
                     }
                 } catch (Exception e) {
                     Log.e(TAG, "Error setting up game: " + e.getMessage(), e);
+                    TouchHLENative.clearLaunch();
                     finish();
                     return;
                 }
             } else {
                 Log.e(TAG, "No game specified, finishing");
+                TouchHLENative.clearLaunch();
                 finish();
                 return;
             }
@@ -96,6 +106,7 @@ public class MainActivity extends SDLActivity {
         if ("file".equalsIgnoreCase(gameUri.getScheme())) {
             File file = new File(gameUri.getPath());
             if (file.exists()) {
+                tempGameFile = null;
                 return file.getAbsolutePath();
             }
             Log.e(TAG, "File URI does not exist: " + gameUri);
@@ -113,6 +124,7 @@ public class MainActivity extends SDLActivity {
             if (absolutePath != null) {
                 File candidate = new File(absolutePath);
                 if (candidate.exists() && candidate.canRead()) {
+                    tempGameFile = null;
                     return candidate.getAbsolutePath();
                 }
                 Log.w(TAG, "Resolved path inaccessible, falling back to cached copy: " + absolutePath);
@@ -219,5 +231,7 @@ public class MainActivity extends SDLActivity {
         }
         tempGameFile = null;
         tempGamePath = null;
+        selectedGameName = null;
+        TouchHLENative.clearLaunch();
     }
 }
