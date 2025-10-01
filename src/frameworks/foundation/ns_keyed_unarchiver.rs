@@ -66,7 +66,9 @@ fn parse_keyed_archive(slice: &[u8]) -> Result<Value, Error> {
                 Ok(value) => return Ok(value),
                 Err(err) => last_err = err,
             },
-            Err(decode_err) => log!("NSKeyedUnarchiver: failed to gunzip archive: {}", decode_err),
+            Err(decode_err) => {
+                log!("NSKeyedUnarchiver: failed to gunzip archive: {}", decode_err);
+            }
         }
     }
 
@@ -78,7 +80,9 @@ fn parse_keyed_archive(slice: &[u8]) -> Result<Value, Error> {
                 Ok(value) => return Ok(value),
                 Err(err) => last_err = err,
             },
-            Err(decode_err) => log!("NSKeyedUnarchiver: failed to inflate zlib archive: {}", decode_err),
+            Err(decode_err) => {
+                log!("NSKeyedUnarchiver: failed to inflate zlib archive: {}", decode_err);
+            }
         }
     }
 
