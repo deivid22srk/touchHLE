@@ -1,157 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="?attr/colorSurface"
     tools:context=".GameListActivity">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:theme="?attr/actionBarTheme"
+        app:title="@string/my_games"
+        app:navigationIcon="@android:drawable/ic_menu_revert" />
+
+    <!-- Search Bar -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fitsSystemWindows="true">
+        android:layout_margin="16dp"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="2dp">
 
-        <com.google.android.material.appbar.CollapsingToolbarLayout
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            app:contentScrim="?attr/colorPrimary"
-            app:expandedTitleGravity="bottom|center_horizontal"
-            app:expandedTitleMarginBottom="24dp"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
-            app:title="@string/my_games">
-
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:alpha="0.3"
-                android:src="@drawable/icon"
-                app:layout_collapseMode="parallax" />
-
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:layout_collapseMode="pin"
-                app:navigationIcon="@android:drawable/ic_menu_revert" />
-
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <LinearLayout
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            app:boxBackgroundMode="none"
+            app:hintEnabled="false"
+            app:startIconDrawable="@android:drawable/ic_menu_search">
 
-            <!-- Search Bar -->
-            <com.google.android.material.card.MaterialCardView
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/searchEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="2dp"
-                app:strokeColor="?attr/colorOutline"
-                app:strokeWidth="1dp">
+                android:hint="@string/search_games"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:padding="16dp" />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:boxBackgroundMode="none"
-                    app:hintEnabled="false"
-                    app:startIconDrawable="@android:drawable/ic_menu_search"
-                    app:startIconTint="?attr/colorOnSurfaceVariant">
+        </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/searchEditText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/search_games"
-                        android:imeOptions="actionSearch"
-                        android:inputType="text"
-                        android:padding="16dp"
-                        android:textColorHint="?attr/colorOnSurfaceVariant" />
+    </com.google.android.material.card.MaterialCardView>
 
-                </com.google.android.material.textfield.TextInputLayout>
+    <!-- Games Counter -->
+    <TextView
+        android:id="@+id/gamesCountText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/scanning_games"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="?android:attr/textColorSecondary" />
 
-            </com.google.android.material.card.MaterialCardView>
+    <!-- Games RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/gamesRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginHorizontal="8dp"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"
+        tools:listitem="@layout/item_game" />
 
-            <!-- Games Counter -->
-            <TextView
-                android:id="@+id/gamesCountText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginBottom="8dp"
-                android:text="@string/scanning_games"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="?attr/colorOnSurfaceVariant" />
+    <!-- Empty State -->
+    <LinearLayout
+        android:id="@+id/emptyStateLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone">
 
-            <!-- Games RecyclerView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/gamesRecyclerView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="8dp"
-                android:clipToPadding="false"
-                android:paddingBottom="16dp"
-                tools:listitem="@layout/item_game" />
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:alpha="0.6"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:contentDescription="No games" />
 
-            <!-- Empty State -->
-            <LinearLayout
-                android:id="@+id/emptyStateLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="64dp"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="32dp"
-                android:visibility="gone">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/no_games_found"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="?attr/colorOnSurface" />
 
-                <ImageView
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:alpha="0.6"
-                    android:src="@android:drawable/ic_menu_gallery"
-                    android:tint="?attr/colorOnSurfaceVariant"
-                    android:contentDescription="No games" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:gravity="center"
+            android:text="Certifique-se de que há arquivos .ipa ou .app na pasta selecionada"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="?attr/colorOnSurface" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/no_games_found"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="?attr/colorOnSurface" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/changeFolderButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/change_folder"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="24dp"
-                    android:gravity="center"
-                    android:text="Certifique-se de que há arquivos .ipa ou .app na pasta selecionada"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/changeFolderButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/change_folder"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
 
     <!-- FAB for file manager -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -163,4 +123,4 @@
         android:contentDescription="@string/file_manager"
         app:srcCompat="@android:drawable/ic_menu_manage" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</LinearLayout>

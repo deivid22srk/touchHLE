@@ -24,7 +24,7 @@
             android:layout_marginEnd="16dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="0dp"
-            app:strokeColor="?attr/colorOutline"
+            app:strokeColor="?android:attr/textColorSecondary"
             app:strokeWidth="1dp">
 
             <ImageView
@@ -62,7 +62,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textColor="?android:attr/textColorSecondary"
                 tools:text="Version 1.0.2" />
 
             <TextView
@@ -73,7 +73,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textColor="?android:attr/textColorSecondary"
                 tools:text="45.2 MB" />
 
             <!-- Status Badge -->
@@ -116,7 +116,7 @@
             android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_more"
-            android:tint="?attr/colorOnSurfaceVariant"
+            android:tint="?android:attr/textColorSecondary"
             android:contentDescription="Menu" />
 
     </LinearLayout>

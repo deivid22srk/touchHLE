@@ -1,29 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="?attr/colorSurface"
     tools:context=".FolderSelectorActivity">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fitsSystemWindows="true">
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:theme="?attr/actionBarTheme"
+        app:title="@string/app_name" />
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="@string/app_name" />
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.core.widget.NestedScrollView
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -59,7 +55,7 @@
                 android:gravity="center"
                 android:text="@string/games_folder_description"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:textColor="?attr/colorOnSurfaceVariant" />
+                android:textColor="?attr/colorOnSurface" />
 
             <!-- Folder Selection Card -->
             <com.google.android.material.card.MaterialCardView
@@ -67,9 +63,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:strokeColor="?attr/colorOutline"
-                app:strokeWidth="1dp">
+                app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -109,7 +103,7 @@
                         android:layout_marginBottom="16dp"
                         android:text="@string/no_folder_selected"
                         android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -138,14 +132,14 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Info Cards -->
+            <!-- Info Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="1dp"
-                app:cardBackgroundColor="?attr/colorSecondaryContainer">
+                app:cardBackgroundColor="?attr/colorSecondary">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -158,7 +152,7 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:src="@android:drawable/ic_dialog_info"
-                        android:tint="?attr/colorOnSecondaryContainer"
+                        android:tint="?attr/colorOnSurface"
                         android:contentDescription="Info" />
 
                     <TextView
@@ -168,7 +162,7 @@
                         android:layout_marginStart="12dp"
                         android:text="Suporta arquivos .ipa e .app do iPhone OS 2.x e 3.x"
                         android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:textColor="?attr/colorOnSecondaryContainer" />
+                        android:textColor="?attr/colorOnSurface" />
 
                 </LinearLayout>
 
@@ -188,6 +182,6 @@
 
         </LinearLayout>
 
-    </androidx.core.widget.NestedScrollView>
+    </ScrollView>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</LinearLayout>
