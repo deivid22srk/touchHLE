@@ -29,6 +29,8 @@ use plist::{Dictionary, Error, Uid, Value};
 use std::io::{Cursor, Read};
 use zip::ZipArchive;
 
+const MAX_ARCHIVE_PARSE_DEPTH: usize = 6;
+
 pub const NSKeyedArchiveRootObjectKey: &str = "root";
 
 pub const CONSTANTS: ConstantExports = &[(
@@ -47,27 +49,37 @@ struct NSKeyedUnarchiverHostObject {
 impl HostObject for NSKeyedUnarchiverHostObject {}
 
 fn parse_value_from_slice(slice: &[u8]) -> Result<Value, Error> {
-    Value::from_reader(Cursor::new(slice)).or_else(|binary_err| {
-        Value::from_reader_xml(Cursor::new(slice)).or(Err(binary_err))
-    })
+    Value::from_reader(Cursor::new(slice))
+        .or_else(|binary_err| Value::from_reader_xml(Cursor::new(slice)).or(Err(binary_err)))
 }
 
 fn parse_keyed_archive(slice: &[u8]) -> Result<Value, Error> {
+    parse_keyed_archive_inner(slice, 0)
+}
+
+fn parse_keyed_archive_inner(slice: &[u8], depth: usize) -> Result<Value, Error> {
     let mut last_err = match parse_value_from_slice(slice) {
         Ok(value) => return Ok(value),
         Err(err) => err,
     };
 
+    if depth >= MAX_ARCHIVE_PARSE_DEPTH {
+        return Err(last_err);
+    }
+
     if slice.starts_with(b"\x1f\x8b") {
         let mut decoder = GzDecoder::new(Cursor::new(slice));
         let mut decompressed = Vec::new();
         match decoder.read_to_end(&mut decompressed) {
-            Ok(_) => match parse_value_from_slice(&decompressed) {
+            Ok(_) => match parse_keyed_archive_inner(&decompressed, depth + 1) {
                 Ok(value) => return Ok(value),
                 Err(err) => last_err = err,
             },
             Err(decode_err) => {
-                log!("NSKeyedUnarchiver: failed to gunzip archive: {}", decode_err);
+                log!(
+                    "NSKeyedUnarchiver: failed to gunzip archive: {}",
+                    decode_err
+                );
             }
         }
     }
@@ -76,12 +88,15 @@ fn parse_keyed_archive(slice: &[u8]) -> Result<Value, Error> {
         let mut decoder = ZlibDecoder::new(Cursor::new(slice));
         let mut decompressed = Vec::new();
         match decoder.read_to_end(&mut decompressed) {
-            Ok(_) => match parse_value_from_slice(&decompressed) {
+            Ok(_) => match parse_keyed_archive_inner(&decompressed, depth + 1) {
                 Ok(value) => return Ok(value),
                 Err(err) => last_err = err,
             },
             Err(decode_err) => {
-                log!("NSKeyedUnarchiver: failed to inflate zlib archive: {}", decode_err);
+                log!(
+                    "NSKeyedUnarchiver: failed to inflate zlib archive: {}",
+                    decode_err
+                );
             }
         }
     }
@@ -90,9 +105,12 @@ fn parse_keyed_archive(slice: &[u8]) -> Result<Value, Error> {
         if let Ok(mut archive) = ZipArchive::new(Cursor::new(slice)) {
             for index in 0..archive.len() {
                 if let Ok(mut file) = archive.by_index(index) {
+                    if !file.is_file() {
+                        continue;
+                    }
                     let mut decompressed = Vec::new();
                     if file.read_to_end(&mut decompressed).is_ok() {
-                        match parse_value_from_slice(&decompressed) {
+                        match parse_keyed_archive_inner(&decompressed, depth + 1) {
                             Ok(value) => return Ok(value),
                             Err(err) => last_err = err,
                         }
