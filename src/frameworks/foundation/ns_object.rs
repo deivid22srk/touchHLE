@@ -73,6 +73,10 @@ pub const CLASSES: ClassExports = objc_classes! {
     this
 }
 
+- (id)initWithCoder:(id)_coder {
+    msg![env; this init]
+}
+
 - (NSUInteger)retainCount {
     env.objc.get_refcount(this).into()
 }
