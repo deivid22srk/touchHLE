@@ -36,7 +36,7 @@ macro_rules! forward_gles20_void {
 macro_rules! unsupported_gles2 {
     ($(unsafe fn $name:ident(&mut self $(, $arg:ident : $ty:ty)*) $(-> $ret:ty)?;)+) => {
         $(
-            unsafe fn $name(&mut self, $( $arg: $ty ),*) $(-> $ret)? {
+            unsafe fn $name(&mut self, $( _$arg: $ty ),*) $(-> $ret)? {
                 panic!(concat!(stringify!($name), " is unsupported on OpenGL ES 2.0 backend"))
             }
         )+
