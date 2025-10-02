@@ -1,6 +1,6 @@
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::mem::ConstVoidPtr;
-use crate::objc::{objc_classes, ClassExports};
+use crate::objc::{id, objc_classes, ClassExports};
 use crate::Environment;
 
 pub const CLASSES: ClassExports = objc_classes! {
