@@ -51,4 +51,28 @@ fn main() {
     )
     .write_bindings(GlobalGenerator, &mut file)
     .unwrap();
+
+    let mut file = File::create(out_dir.join("gles20.rs")).unwrap();
+    Registry::new(
+        Api::Gles2,
+        (2, 0),
+        Profile::Core,
+        Fallbacks::None,
+        [
+            "GL_OES_depth24",
+            "GL_OES_depth32",
+            "GL_OES_packed_depth_stencil",
+            "GL_OES_vertex_array_object",
+            "GL_OES_texture_3D",
+            "GL_OES_rgb8_rgba8",
+            "GL_OES_standard_derivatives",
+            "GL_OES_get_program_binary",
+            "GL_OES_mapbuffer",
+            "GL_EXT_texture_filter_anisotropic",
+            "GL_EXT_texture_format_BGRA8888",
+            "GL_EXT_discard_framebuffer",
+        ],
+    )
+    .write_bindings(GlobalGenerator, &mut file)
+    .unwrap();
 }

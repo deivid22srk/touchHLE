@@ -156,10 +156,9 @@ pub enum BatteryState {
 }
 
 pub enum GLVersion {
-    /// OpenGL ES 1.1
     GLES11,
-    /// OpenGL 2.1 compatibility profile
     GL21Compat,
+    GLES20,
 }
 
 pub struct GLContext(sdl2::video::GLContext);
@@ -1005,6 +1004,10 @@ impl Window {
             GLVersion::GL21Compat => {
                 attr.set_context_version(2, 1);
                 attr.set_context_profile(sdl2::video::GLProfile::Compatibility);
+            }
+            GLVersion::GLES20 => {
+                attr.set_context_version(2, 0);
+                attr.set_context_profile(sdl2::video::GLProfile::GLES);
             }
         }
 
