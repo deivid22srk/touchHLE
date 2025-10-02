@@ -65,35 +65,35 @@ pub(super) enum GlesContext {
 }
 
 impl GlesContext {
-    fn make_current(&self, window: &Window) {
+    pub(super) fn make_current(&self, window: &Window) {
         match self {
             GlesContext::Gles1(ctx) => ctx.as_ref().make_current(window),
             GlesContext::Gles2(ctx) => ctx.as_ref().make_current(window),
         }
     }
 
-    fn as_gles_mut(&mut self) -> &mut dyn GLES {
+    pub(super) fn as_gles_mut(&mut self) -> &mut dyn GLES {
         match self {
             GlesContext::Gles1(ctx) => ctx.as_mut(),
             GlesContext::Gles2(ctx) => ctx.as_mut(),
         }
     }
 
-    fn as_gles(&self) -> &dyn GLES {
+    pub(super) fn as_gles(&self) -> &dyn GLES {
         match self {
             GlesContext::Gles1(ctx) => ctx.as_ref(),
             GlesContext::Gles2(ctx) => ctx.as_ref(),
         }
     }
 
-    fn as_gles2_mut(&mut self) -> Option<&mut dyn GLES2> {
+    pub(super) fn as_gles2_mut(&mut self) -> Option<&mut dyn GLES2> {
         match self {
             GlesContext::Gles2(ctx) => Some(ctx.as_mut()),
             _ => None,
         }
     }
 
-    fn as_gles2(&self) -> Option<&dyn GLES2> {
+    pub(super) fn as_gles2(&self) -> Option<&dyn GLES2> {
         match self {
             GlesContext::Gles2(ctx) => Some(ctx.as_ref()),
             _ => None,
@@ -375,11 +375,11 @@ pub const CLASSES: ClassExports = objc_classes! {
     };
 
     if is_gles2 {
-        let window = env
-            .window
-            .as_mut()
-            .expect("OpenGL ES is not supported in headless mode");
         let renderbuffer: GLuint = {
+            let window = env
+                .window
+                .as_mut()
+                .expect("OpenGL ES is not supported in headless mode");
             let gles = super::sync_context(&mut env.framework_state.opengles, &mut env.objc, window, env.current_thread);
             let mut renderbuffer = 0;
             unsafe {
@@ -397,6 +397,10 @@ pub const CLASSES: ClassExports = objc_classes! {
             return false;
         };
         let pixels_vec = get_pixels_vec_for_presenting(env, drawable);
+        let window = env
+            .window
+            .as_mut()
+            .expect("OpenGL ES is not supported in headless mode");
         let gles = super::sync_context(&mut env.framework_state.opengles, &mut env.objc, window, env.current_thread);
         let (pixels_vec, width, height) = unsafe { read_renderbuffer(gles, pixels_vec) };
         present_pixels(env, drawable, pixels_vec, width, height);

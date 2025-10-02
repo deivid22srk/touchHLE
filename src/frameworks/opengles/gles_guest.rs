@@ -574,14 +574,14 @@ fn glIsBuffer(env: &mut Environment, buffer: GLuint) -> GLboolean {
 fn glGenBuffers(env: &mut Environment, n: GLsizei, buffers: MutPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let buffers = mem.ptr_at_mut(buffers, n_usize);
+        let buffers = mem.ptr_at_mut(buffers, n_usize.try_into().unwrap());
         unsafe { gles.GenBuffers(n, buffers) }
     })
 }
 fn glDeleteBuffers(env: &mut Environment, n: GLsizei, buffers: ConstPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let buffers = mem.ptr_at(buffers, n_usize);
+        let buffers = mem.ptr_at(buffers, n_usize.try_into().unwrap());
         unsafe { gles.DeleteBuffers(n, buffers) }
     })
 }
@@ -971,14 +971,14 @@ fn glReadPixels(
 fn glGenTextures(env: &mut Environment, n: GLsizei, textures: MutPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let textures = mem.ptr_at_mut(textures, n_usize);
+        let textures = mem.ptr_at_mut(textures, n_usize.try_into().unwrap());
         unsafe { gles.GenTextures(n, textures) }
     })
 }
 fn glDeleteTextures(env: &mut Environment, n: GLsizei, textures: ConstPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let textures = mem.ptr_at(textures, n_usize);
+        let textures = mem.ptr_at(textures, n_usize.try_into().unwrap());
         unsafe { gles.DeleteTextures(n, textures) }
     })
 }
@@ -1237,14 +1237,14 @@ fn glTexEnviv(env: &mut Environment, target: GLenum, pname: GLenum, params: Cons
 fn glGenFramebuffersOES(env: &mut Environment, n: GLsizei, framebuffers: MutPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let framebuffers = mem.ptr_at_mut(framebuffers, n_usize);
+        let framebuffers = mem.ptr_at_mut(framebuffers, n_usize.try_into().unwrap());
         unsafe { gles.GenFramebuffersOES(n, framebuffers) }
     })
 }
 fn glGenRenderbuffersOES(env: &mut Environment, n: GLsizei, renderbuffers: MutPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let renderbuffers = mem.ptr_at_mut(renderbuffers, n_usize);
+        let renderbuffers = mem.ptr_at_mut(renderbuffers, n_usize.try_into().unwrap());
         unsafe { gles.GenRenderbuffersOES(n, renderbuffers) }
     })
 }
@@ -1342,14 +1342,14 @@ fn glCheckFramebufferStatusOES(env: &mut Environment, target: GLenum) -> GLenum 
 fn glDeleteFramebuffersOES(env: &mut Environment, n: GLsizei, framebuffers: ConstPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let framebuffers = mem.ptr_at(framebuffers, n_usize);
+        let framebuffers = mem.ptr_at(framebuffers, n_usize.try_into().unwrap());
         unsafe { gles.DeleteFramebuffersOES(n, framebuffers) }
     })
 }
 fn glDeleteRenderbuffersOES(env: &mut Environment, n: GLsizei, renderbuffers: ConstPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let renderbuffers = mem.ptr_at(renderbuffers, n_usize);
+        let renderbuffers = mem.ptr_at(renderbuffers, n_usize.try_into().unwrap());
         unsafe { gles.DeleteRenderbuffersOES(n, renderbuffers) }
     })
 }
@@ -1581,7 +1581,7 @@ fn glAttachShader(env: &mut Environment, program: GLuint, shader: GLuint) {
 }
 
 fn glBindAttribLocation(env: &mut Environment, program: GLuint, index: GLuint, name: ConstPtr<u8>) {
-    let name_bytes = env.mem.cstr_at(name);
+    let name_bytes = env.mem.cstr_at(name).to_vec();
     with_ctx_and_mem_gles2(env, |gles, _| unsafe {
         gles.BindAttribLocation(program, index, name_bytes.as_ptr().cast());
     });
@@ -1676,7 +1676,7 @@ fn glGetActiveAttrib(
         let name_ptr = if bufsize_usize == 0 {
             std::ptr::null_mut()
         } else {
-            mem.ptr_at_mut(name.cast::<GLchar>(), bufsize_usize)
+            mem.ptr_at_mut(name.cast::<GLchar>(), bufsize_usize.try_into().unwrap())
         };
         let length_ptr = if length.is_null() {
             std::ptr::null_mut()
@@ -1722,7 +1722,7 @@ fn glGetActiveUniform(
         let name_ptr = if bufsize_usize == 0 {
             std::ptr::null_mut()
         } else {
-            mem.ptr_at_mut(name.cast::<GLchar>(), bufsize_usize)
+            mem.ptr_at_mut(name.cast::<GLchar>(), bufsize_usize.try_into().unwrap())
         };
         let length_ptr = if length.is_null() {
             std::ptr::null_mut()
@@ -1770,7 +1770,7 @@ fn glGetAttachedShaders(
         let shaders_ptr = if maxcount_usize == 0 {
             std::ptr::null_mut()
         } else {
-            mem.ptr_at_mut(shaders, maxcount_usize)
+            mem.ptr_at_mut(shaders, maxcount_usize.try_into().unwrap())
         };
         unsafe {
             gles.GetAttachedShaders(program, maxcount, count_ptr, shaders_ptr);
@@ -1779,7 +1779,7 @@ fn glGetAttachedShaders(
 }
 
 fn glGetAttribLocation(env: &mut Environment, program: GLuint, name: ConstPtr<u8>) -> GLint {
-    let name_bytes = env.mem.cstr_at(name);
+    let name_bytes = env.mem.cstr_at(name).to_vec();
     with_ctx_and_mem_gles2(env, |gles, _| unsafe {
         gles.GetAttribLocation(program, name_bytes.as_ptr().cast())
     })
@@ -1797,7 +1797,7 @@ fn glGetProgramInfoLog(
         let info_log_ptr = if bufsize_usize == 0 {
             std::ptr::null_mut()
         } else {
-            mem.ptr_at_mut(infolog.cast::<GLchar>(), bufsize_usize)
+            mem.ptr_at_mut(infolog.cast::<GLchar>(), bufsize_usize.try_into().unwrap())
         };
         let length_ptr = if length.is_null() {
             std::ptr::null_mut()
@@ -1829,7 +1829,7 @@ fn glGetShaderInfoLog(
         let info_log_ptr = if bufsize_usize == 0 {
             std::ptr::null_mut()
         } else {
-            mem.ptr_at_mut(infolog.cast::<GLchar>(), bufsize_usize)
+            mem.ptr_at_mut(infolog.cast::<GLchar>(), bufsize_usize.try_into().unwrap())
         };
         let length_ptr = if length.is_null() {
             std::ptr::null_mut()
@@ -1878,7 +1878,7 @@ fn glGetShaderSource(
         let source_ptr = if bufsize_usize == 0 {
             std::ptr::null_mut()
         } else {
-            mem.ptr_at_mut(source, bufsize_usize)
+            mem.ptr_at_mut(source, bufsize_usize.try_into().unwrap())
         };
         let length_ptr = if length.is_null() {
             std::ptr::null_mut()
@@ -1916,7 +1916,7 @@ fn glGetUniformiv(env: &mut Environment, program: GLuint, location: GLint, param
 }
 
 fn glGetUniformLocation(env: &mut Environment, program: GLuint, name: ConstPtr<u8>) -> GLint {
-    let name_bytes = env.mem.cstr_at(name);
+    let name_bytes = env.mem.cstr_at(name).to_vec();
     with_ctx_and_mem_gles2(env, |gles, _| unsafe {
         gles.GetUniformLocation(program, name_bytes.as_ptr().cast())
     })
@@ -1960,7 +1960,7 @@ fn glGetVertexAttribPointerv(
             )
         };
         unsafe {
-            mem.write(pointer, guest_pointer);
+            mem.write(pointer, guest_pointer.cast());
         }
     });
 }
@@ -1997,19 +1997,19 @@ fn glShaderBinary(
         let shaders_ptr = if n_usize == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(shaders, n_usize)
+            mem.ptr_at(shaders, n_usize.try_into().unwrap())
         };
         let binary_ptr = if length_usize == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(binary, length_usize)
+            mem.ptr_at(binary, length_usize.try_into().unwrap())
         };
         unsafe {
             gles.ShaderBinary(
                 n,
                 shaders_ptr,
                 binaryformat,
-                binary_ptr.as_ptr().cast(),
+                binary_ptr.cast(),
                 length,
             );
         }
@@ -2028,19 +2028,19 @@ fn glShaderSource(
         let string_ptr = if count_usize == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(string, count_usize)
+            mem.ptr_at(string, count_usize.try_into().unwrap())
         };
         let length_ptr = if length.is_null() {
             std::ptr::null()
         } else {
-            mem.ptr_at(length, count_usize)
+            mem.ptr_at(length, count_usize.try_into().unwrap())
         };
         unsafe {
             gles.ShaderSource(
                 shader,
                 count,
-                string_ptr as *const *const i8,
-                length_ptr as *const GLint,
+                string_ptr.cast(),
+                length_ptr,
             );
         }
     });
@@ -2088,7 +2088,7 @@ fn glUniform1fv(env: &mut Environment, location: GLint, count: GLsizei, value: C
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.Uniform1fv(location, count, value_ptr) };
     });
@@ -2106,7 +2106,7 @@ fn glUniform1iv(env: &mut Environment, location: GLint, count: GLsizei, value: C
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.Uniform1iv(location, count, value_ptr) };
     });
@@ -2124,7 +2124,7 @@ fn glUniform2fv(env: &mut Environment, location: GLint, count: GLsizei, value: C
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.Uniform2fv(location, count, value_ptr) };
     });
@@ -2142,7 +2142,7 @@ fn glUniform2iv(env: &mut Environment, location: GLint, count: GLsizei, value: C
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.Uniform2iv(location, count, value_ptr) };
     });
@@ -2160,7 +2160,7 @@ fn glUniform3fv(env: &mut Environment, location: GLint, count: GLsizei, value: C
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.Uniform3fv(location, count, value_ptr) };
     });
@@ -2178,7 +2178,7 @@ fn glUniform3iv(env: &mut Environment, location: GLint, count: GLsizei, value: C
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.Uniform3iv(location, count, value_ptr) };
     });
@@ -2203,7 +2203,7 @@ fn glUniform4fv(env: &mut Environment, location: GLint, count: GLsizei, value: C
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.Uniform4fv(location, count, value_ptr) };
     });
@@ -2221,7 +2221,7 @@ fn glUniform4iv(env: &mut Environment, location: GLint, count: GLsizei, value: C
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.Uniform4iv(location, count, value_ptr) };
     });
@@ -2239,7 +2239,7 @@ fn glUniformMatrix2fv(
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.UniformMatrix2fv(location, count, transpose, value_ptr) };
     });
@@ -2257,7 +2257,7 @@ fn glUniformMatrix3fv(
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.UniformMatrix3fv(location, count, transpose, value_ptr) };
     });
@@ -2275,7 +2275,7 @@ fn glUniformMatrix4fv(
         let value_ptr = if total == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(value, total)
+            mem.ptr_at(value, total.try_into().unwrap())
         };
         unsafe { gles.UniformMatrix4fv(location, count, transpose, value_ptr) };
     });
