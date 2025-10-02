@@ -1948,9 +1948,9 @@ fn glGetVertexAttribPointerv(
     pointer: MutPtr<MutVoidPtr>,
 ) {
     with_ctx_and_mem_gles2(env, |gles, mem| {
-        let gles_common: &mut dyn GLES = gles;
         let mut host_pointer: *mut GLvoid = std::ptr::null_mut();
         unsafe { gles.GetVertexAttribPointerv(index, pname, &mut host_pointer) };
+        let gles_common: &mut dyn GLES = gles;
         let guest_pointer = unsafe {
             translate_pointer_or_offset_to_guest(
                 gles_common,
@@ -1959,9 +1959,7 @@ fn glGetVertexAttribPointerv(
                 gles11::ARRAY_BUFFER_BINDING,
             )
         };
-        unsafe {
-            mem.write(pointer, MutVoidPtr::from_bits(guest_pointer.to_bits()));
-        }
+        mem.write(pointer, MutVoidPtr::from_bits(guest_pointer.to_bits()));
     });
 }
 
