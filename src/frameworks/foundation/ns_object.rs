@@ -83,16 +83,25 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (id)retain {
     log_dbg!("[{:?} retain]", this);
+    if env.objc.is_static_object(this) {
+        return this;
+    }
     env.objc.increment_refcount(this);
     this
 }
 - (())release {
     log_dbg!("[{:?} release]", this);
+    if env.objc.is_static_object(this) {
+        return;
+    }
     if env.objc.decrement_refcount(this) {
         () = msg![env; this dealloc];
     }
 }
 - (id)autorelease {
+    if env.objc.is_static_object(this) {
+        return this;
+    }
     () = msg_class![env; NSAutoreleasePool addObject:this];
     this
 }

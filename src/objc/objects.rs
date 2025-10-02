@@ -234,6 +234,15 @@ impl super::ObjC {
         self.objects.get(&object).map(|entry| &*entry.host_object)
     }
 
+    /// Check whether an object has static lifetime, meaning it is tracked but
+    /// does not participate in reference counting.
+    pub fn is_static_object(&self, object: id) -> bool {
+        self.objects
+            .get(&object)
+            .map(|entry| entry.refcount.is_none())
+            .unwrap_or(false)
+    }
+
     /// Get a reference to a host object and downcast it. Panics if there is
     /// no such object, or if downcasting fails.
     pub fn borrow<T: AnyHostObject + 'static>(&self, object: id) -> &T {
