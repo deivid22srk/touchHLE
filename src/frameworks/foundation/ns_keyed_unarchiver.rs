@@ -60,6 +60,9 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
     objects.push(Value::String("$null".to_string()));
 
     let mut class_map: HashMap<String, usize> = HashMap::new();
+    let mut nib_objects_uids: Vec<usize> = Vec::new();
+    let mut nib_connections_uids: Vec<usize> = Vec::new();
+    let mut nib_visible_windows_uids: Vec<usize> = Vec::new();
 
     for obj in nib.objects() {
         let class_name = obj.class_name(nib.class_names()).name();
@@ -112,7 +115,16 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
             obj_dict.insert(key.to_string(), val);
         }
 
+        let obj_uid = objects.len();
         objects.push(Value::Dictionary(obj_dict));
+
+        if class_name == "UIRuntimeOutletConnection" || class_name == "UIRuntimeEventConnection" {
+            nib_connections_uids.push(obj_uid);
+        } else if class_name.starts_with("UI") && class_name.contains("Window") {
+            nib_visible_windows_uids.push(obj_uid);
+        } else {
+            nib_objects_uids.push(obj_uid);
+        }
     }
 
     let mut root = Dictionary::new();
@@ -124,12 +136,37 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
     root.insert("$objects".to_string(), Value::Array(objects));
 
     let mut top = Dictionary::new();
-    if !nib.objects().is_empty() {
-        top.insert("UINibEncoderEmptyKey".to_string(), Value::Uid(Uid::new(1)));
+    
+    if !nib_objects_uids.is_empty() {
+        let objects_uid = create_array_in_objects(&mut root, &nib_objects_uids);
+        top.insert("UINibObjectsKey".to_string(), Value::Uid(Uid::new(objects_uid)));
+        top.insert("UINibTopLevelObjectsKey".to_string(), Value::Uid(Uid::new(objects_uid)));
     }
+    
+    if !nib_connections_uids.is_empty() {
+        let connections_uid = create_array_in_objects(&mut root, &nib_connections_uids);
+        top.insert("UINibConnectionsKey".to_string(), Value::Uid(Uid::new(connections_uid)));
+    }
+    
+    if !nib_visible_windows_uids.is_empty() {
+        let windows_uid = create_array_in_objects(&mut root, &nib_visible_windows_uids);
+        top.insert("UINibVisibleWindowsKey".to_string(), Value::Uid(Uid::new(windows_uid)));
+    }
+
     root.insert("$top".to_string(), Value::Dictionary(top));
 
     Ok(Value::Dictionary(root))
+}
+
+fn create_array_in_objects(root: &mut Dictionary, uids: &[usize]) -> u64 {
+    if let Some(Value::Array(objects)) = root.get_mut("$objects") {
+        let array_uid = objects.len() as u64;
+        let uid_array: Vec<Value> = uids.iter().map(|&uid| Value::Uid(Uid::new(uid as u64))).collect();
+        objects.push(Value::Array(uid_array));
+        array_uid
+    } else {
+        0
+    }
 }
 
 fn parse_value_from_slice(slice: &[u8]) -> Result<Value, Error> {
