@@ -12,7 +12,9 @@
 //! - Apple's [Archives and Serializations Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Archiving/Articles/archives.html)
 
 use super::ns_string::{from_rust_string, get_static_str, to_rust_string};
+use super::{ns_array, ns_dictionary};
 use crate::dyld::{ConstantExports, HostConstant};
+use crate::frameworks::core_foundation::time::apple_epoch;
 use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
 use crate::frameworks::foundation::{NSInteger, NSUInteger};
 use crate::frameworks::uikit::ui_geometry::{
@@ -29,6 +31,7 @@ use nibarchive::{NIBArchive, ValueVariant};
 use plist::{Dictionary, Error, Uid, Value};
 use std::collections::HashMap;
 use std::io::{Cursor, Read};
+use std::time::SystemTime;
 use zip::ZipArchive;
 
 const MAX_ARCHIVE_PARSE_DEPTH: usize = 6;
@@ -88,10 +91,7 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
         };
 
         let mut obj_dict = Dictionary::new();
-        obj_dict.insert(
-            "$class".to_string(),
-            Value::Uid(Uid::new(class_uid as u64)),
-        );
+        obj_dict.insert("$class".to_string(), Value::Uid(Uid::new(class_uid as u64)));
 
         for value in obj.values(nib.values()) {
             let key = value.key(nib.keys());
@@ -108,9 +108,7 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
                     obj_dict.insert(key.to_string(), Value::Uid(Uid::new(0)));
                     continue;
                 }
-                ValueVariant::ObjectRef(idx) => {
-                    Value::Uid(Uid::new(*idx as u64 + 1))
-                }
+                ValueVariant::ObjectRef(idx) => Value::Uid(Uid::new(*idx as u64 + 1)),
             };
             obj_dict.insert(key.to_string(), val);
         }
@@ -136,21 +134,33 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
     root.insert("$objects".to_string(), Value::Array(objects));
 
     let mut top = Dictionary::new();
-    
+
     if !nib_objects_uids.is_empty() {
         let objects_uid = create_array_in_objects(&mut root, &nib_objects_uids);
-        top.insert("UINibObjectsKey".to_string(), Value::Uid(Uid::new(objects_uid)));
-        top.insert("UINibTopLevelObjectsKey".to_string(), Value::Uid(Uid::new(objects_uid)));
+        top.insert(
+            "UINibObjectsKey".to_string(),
+            Value::Uid(Uid::new(objects_uid)),
+        );
+        top.insert(
+            "UINibTopLevelObjectsKey".to_string(),
+            Value::Uid(Uid::new(objects_uid)),
+        );
     }
-    
+
     if !nib_connections_uids.is_empty() {
         let connections_uid = create_array_in_objects(&mut root, &nib_connections_uids);
-        top.insert("UINibConnectionsKey".to_string(), Value::Uid(Uid::new(connections_uid)));
+        top.insert(
+            "UINibConnectionsKey".to_string(),
+            Value::Uid(Uid::new(connections_uid)),
+        );
     }
-    
+
     if !nib_visible_windows_uids.is_empty() {
         let windows_uid = create_array_in_objects(&mut root, &nib_visible_windows_uids);
-        top.insert("UINibVisibleWindowsKey".to_string(), Value::Uid(Uid::new(windows_uid)));
+        top.insert(
+            "UINibVisibleWindowsKey".to_string(),
+            Value::Uid(Uid::new(windows_uid)),
+        );
     }
 
     root.insert("$top".to_string(), Value::Dictionary(top));
@@ -161,9 +171,12 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
 fn create_array_in_objects(root: &mut Dictionary, uids: &[usize]) -> u64 {
     if let Some(Value::Array(objects)) = root.get_mut("$objects") {
         let ns_array_class_uid = objects.len() as u64;
-        
+
         let mut ns_array_class_dict = Dictionary::new();
-        ns_array_class_dict.insert("$classname".to_string(), Value::String("NSArray".to_string()));
+        ns_array_class_dict.insert(
+            "$classname".to_string(),
+            Value::String("NSArray".to_string()),
+        );
         ns_array_class_dict.insert(
             "$classes".to_string(),
             Value::Array(vec![
@@ -172,14 +185,20 @@ fn create_array_in_objects(root: &mut Dictionary, uids: &[usize]) -> u64 {
             ]),
         );
         objects.push(Value::Dictionary(ns_array_class_dict));
-        
+
         let array_obj_uid = objects.len() as u64;
         let mut array_dict = Dictionary::new();
-        array_dict.insert("$class".to_string(), Value::Uid(Uid::new(ns_array_class_uid)));
-        
-        let uid_array: Vec<Value> = uids.iter().map(|&uid| Value::Uid(Uid::new(uid as u64))).collect();
+        array_dict.insert(
+            "$class".to_string(),
+            Value::Uid(Uid::new(ns_array_class_uid)),
+        );
+
+        let uid_array: Vec<Value> = uids
+            .iter()
+            .map(|&uid| Value::Uid(Uid::new(uid as u64)))
+            .collect();
         array_dict.insert("NS.objects".to_string(), Value::Array(uid_array));
-        
+
         objects.push(Value::Dictionary(array_dict));
         array_obj_uid
     } else {
@@ -476,15 +495,16 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)decodeObjectForKey:(id)key { // NSString*
-    let Some(next_uid) = get_value_to_decode_for_key(env, this, key) else {
+    let Some(value) = get_value_to_decode_for_key(env, this, key) else {
         return nil;
     };
-    let next_uid = next_uid.as_uid().copied().unwrap();
-    let object = unarchive_key(env, this, next_uid);
+    let object = unarchive_value_owned(env, this, value);
 
-    // on behalf of the caller
-    retain(env, object);
-    autorelease(env, object)
+    if object == nil {
+        nil
+    } else {
+        autorelease(env, object)
+    }
 }
 
 - (bool)containsValueForKey:(id)key { // NSString*
@@ -528,6 +548,83 @@ fn get_value_to_decode_for_key(env: &mut Environment, unarchiver: id, key: id) -
     .as_dictionary()
     .unwrap();
     scope.get(&key)
+}
+
+fn unarchive_value_owned(env: &mut Environment, unarchiver: id, value: &Value) -> id {
+    if let Some(uid) = value.as_uid().copied() {
+        let object = unarchive_key(env, unarchiver, uid);
+        retain(env, object);
+        return object;
+    }
+
+    match value {
+        Value::String(s) => from_rust_string(env, s.clone()),
+        Value::Integer(int) => {
+            #[allow(clippy::clone_on_copy)]
+            let int = int.clone();
+            let number: id = msg_class![env; NSNumber alloc];
+            if let Some(int64) = int.as_signed() {
+                let longlong: i64 = int64;
+                msg![env; number initWithLongLong:longlong]
+            } else if let Some(uint64) = int.as_unsigned() {
+                let ulonglong: u64 = uint64;
+                msg![env; number initWithUnsignedLongLong:ulonglong]
+            } else {
+                unreachable!();
+            }
+        }
+        Value::Real(real) => {
+            let number: id = msg_class![env; NSNumber alloc];
+            let double: f64 = *real;
+            msg![env; number initWithDouble:double]
+        }
+        Value::Boolean(b) => {
+            let number: id = msg_class![env; NSNumber alloc];
+            let bool_value: bool = *b;
+            msg![env; number initWithBool:bool_value]
+        }
+        Value::Data(data) => {
+            let len: GuestUSize = data.len().try_into().unwrap();
+            let guest_bytes: MutVoidPtr = env.mem.alloc(len);
+            env.mem
+                .bytes_at_mut(guest_bytes.cast(), len)
+                .copy_from_slice(data);
+            let nsdata: id = msg_class![env; NSData alloc];
+            msg![env; nsdata initWithBytesNoCopy:guest_bytes length:len freeWhenDone:true]
+        }
+        Value::Array(array) => {
+            let mut objects = Vec::with_capacity(array.len());
+            for element in array {
+                let object = unarchive_value_owned(env, unarchiver, element);
+                objects.push(object);
+            }
+            ns_array::from_vec(env, objects)
+        }
+        Value::Dictionary(dict) => {
+            let mut pairs = Vec::with_capacity(dict.len());
+            for (key, val) in dict.iter() {
+                let key_obj = from_rust_string(env, key.clone());
+                let value_obj = unarchive_value_owned(env, unarchiver, val);
+                pairs.push((key_obj, value_obj));
+            }
+            let dict_obj = ns_dictionary::dict_from_keys_and_objects(env, &pairs);
+            for (key_obj, value_obj) in pairs {
+                release(env, key_obj);
+                release(env, value_obj);
+            }
+            dict_obj
+        }
+        Value::Date(date_val) => {
+            let time: SystemTime = (*date_val).into();
+            let interval = match time.duration_since(apple_epoch()) {
+                Ok(duration) => duration.as_secs_f64(),
+                Err(_) => 0.0,
+            };
+            let date: id = msg_class![env; NSDate alloc];
+            msg![env; date initWithTimeIntervalSinceReferenceDate:interval]
+        }
+        Value::Uid(_) => unreachable!(),
+    }
 }
 
 /// The core of the implementation: unarchive something by its uid.

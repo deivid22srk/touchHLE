@@ -6,9 +6,9 @@
 //! Logging and terminal output macros.
 
 use std::fs::File;
-use std::sync::LazyLock;
 #[cfg(target_os = "android")]
 use std::os::raw::{c_char, c_int};
+use std::sync::LazyLock;
 
 /// Get a handle to the log file. This is only for use by logging macros!
 ///
@@ -39,22 +39,14 @@ pub(crate) fn log_to_logcat(message: &str) {
 
     if let Ok(c_message) = CString::new(sanitized.as_ref()) {
         unsafe {
-            __android_log_write(
-                ANDROID_LOG_INFO,
-                TAG.as_ptr(),
-                c_message.as_ptr(),
-            );
+            __android_log_write(ANDROID_LOG_INFO, TAG.as_ptr(), c_message.as_ptr());
         }
     }
 }
 
 #[cfg(target_os = "android")]
 extern "C" {
-    fn __android_log_write(
-        prio: c_int,
-        tag: *const c_char,
-        text: *const c_char,
-    ) -> c_int;
+    fn __android_log_write(prio: c_int, tag: *const c_char, text: *const c_char) -> c_int;
 }
 
 /// Prints a log message unconditionally. Use this for errors or warnings.

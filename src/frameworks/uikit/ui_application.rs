@@ -337,9 +337,10 @@ pub(super) fn UIApplicationMain(
     {
         let pool: id = msg_class![env; NSAutoreleasePool new];
         let delegate: id = msg![env; ui_application delegate];
-        if delegate != nil && env
-            .objc
-            .object_has_method_named(&env.mem, delegate, "applicationDidBecomeActive:")
+        if delegate != nil
+            && env
+                .objc
+                .object_has_method_named(&env.mem, delegate, "applicationDidBecomeActive:")
         {
             () = msg![env; delegate applicationDidBecomeActive:ui_application];
         }
@@ -383,9 +384,10 @@ pub(super) fn exit(env: &mut Environment) {
         }
 
         let delegate: id = msg![env; ui_application delegate];
-        if delegate != nil && env
-            .objc
-            .object_has_method_named(&env.mem, delegate, "applicationWillResignActive:")
+        if delegate != nil
+            && env
+                .objc
+                .object_has_method_named(&env.mem, delegate, "applicationWillResignActive:")
         {
             () = msg![env; delegate applicationWillResignActive:ui_application];
         }
@@ -399,9 +401,10 @@ pub(super) fn exit(env: &mut Environment) {
     {
         let pool: id = msg_class![env; NSAutoreleasePool new];
         let delegate: id = msg![env; ui_application delegate];
-        if delegate != nil && env
-            .objc
-            .object_has_method_named(&env.mem, delegate, "applicationWillTerminate:")
+        if delegate != nil
+            && env
+                .objc
+                .object_has_method_named(&env.mem, delegate, "applicationWillTerminate:")
         {
             () = msg![env; delegate applicationWillTerminate:ui_application];
         }
