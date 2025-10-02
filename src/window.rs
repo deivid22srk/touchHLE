@@ -26,6 +26,7 @@ use std::env;
 use std::f32::consts::FRAC_PI_2;
 use std::num::NonZeroU32;
 use std::ptr::null_mut;
+use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -78,6 +79,50 @@ pub enum FingerId {
     ButtonToTouch(crate::options::Button),
 }
 pub type Coords = (f32, f32);
+
+struct FpsCounter {
+    frame_count: u64,
+    last_update: Instant,
+    current_fps: u32,
+}
+
+impl FpsCounter {
+    fn new() -> Self {
+        FpsCounter {
+            frame_count: 0,
+            last_update: Instant::now(),
+            current_fps: 0,
+        }
+    }
+    
+    fn record_frame(&mut self) {
+        self.frame_count += 1;
+        let now = Instant::now();
+        let elapsed = now.duration_since(self.last_update);
+        
+        if elapsed >= Duration::from_secs(1) {
+            self.current_fps = (self.frame_count as f64 / elapsed.as_secs_f64()) as u32;
+            self.frame_count = 0;
+            self.last_update = now;
+        }
+    }
+    
+    fn get_fps(&self) -> u32 {
+        self.current_fps
+    }
+}
+
+fn fps_counter() -> &'static Mutex<FpsCounter> {
+    static COUNTER: OnceLock<Mutex<FpsCounter>> = OnceLock::new();
+    COUNTER.get_or_init(|| Mutex::new(FpsCounter::new()))
+}
+
+pub fn get_current_fps() -> u32 {
+    fps_counter()
+        .lock()
+        .map(|c| c.get_fps())
+        .unwrap_or(0)
+}
 
 #[derive(Debug)]
 pub enum TextInputEvent {
@@ -1070,6 +1115,9 @@ impl Window {
     /// Swap front-buffer and back-buffer so the result of OpenGL rendering is
     /// presented.
     pub fn swap_window(&self) {
+        if let Ok(mut counter) = fps_counter().lock() {
+            counter.record_frame();
+        }
         self.window.gl_swap_window();
     }
 

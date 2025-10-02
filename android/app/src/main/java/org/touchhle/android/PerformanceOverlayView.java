@@ -9,27 +9,20 @@ import android.os.Debug;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
-import android.view.Choreographer;
 import android.view.View;
 
 public class PerformanceOverlayView extends View {
-    private static final long UPDATE_INTERVAL_NS = 1000000000L; // 1 segundo em nanosegundos
-    private static final long REFRESH_DISPLAY_INTERVAL_MS = 100; // Atualiza display a cada 100ms
+    private static final long UPDATE_INTERVAL_MS = 100;
     
     private Paint textPaint;
     private Paint backgroundPaint;
     private Handler handler;
-    private Runnable displayUpdateRunnable;
+    private Runnable updateRunnable;
     
     private boolean showFps = false;
     private boolean showRam = false;
     private int currentFps = 0;
     private float currentRamMB = 0.0f;
-    
-    private long frameCount = 0;
-    private long lastFpsUpdateTime = 0;
-    private Choreographer choreographer;
-    private Choreographer.FrameCallback frameCallback;
     
     private int textSize = 28;
     private int padding = 16;
@@ -54,28 +47,14 @@ public class PerformanceOverlayView extends View {
         backgroundPaint = new Paint();
         backgroundPaint.setColor(Color.argb(200, 0, 0, 0));
         
-        choreographer = Choreographer.getInstance();
         handler = new Handler(Looper.getMainLooper());
-        
-        frameCallback = new Choreographer.FrameCallback() {
-            @Override
-            public void doFrame(long frameTimeNanos) {
-                calculateFps(frameTimeNanos);
-                if (showFps) {
-                    choreographer.postFrameCallback(this);
-                }
-            }
-        };
-        
-        displayUpdateRunnable = new Runnable() {
+        updateRunnable = new Runnable() {
             @Override
             public void run() {
-                if (showRam) {
-                    calculateRam();
-                }
+                updateMetrics();
                 if (showFps || showRam) {
                     invalidate();
-                    handler.postDelayed(this, REFRESH_DISPLAY_INTERVAL_MS);
+                    handler.postDelayed(this, UPDATE_INTERVAL_MS);
                 }
             }
         };
@@ -83,13 +62,6 @@ public class PerformanceOverlayView extends View {
     
     public void setShowFps(boolean show) {
         this.showFps = show;
-        if (show) {
-            frameCount = 0;
-            lastFpsUpdateTime = 0;
-            choreographer.postFrameCallback(frameCallback);
-        } else {
-            choreographer.removeFrameCallback(frameCallback);
-        }
         updateVisibility();
     }
     
@@ -109,28 +81,25 @@ public class PerformanceOverlayView extends View {
     }
     
     private void startUpdating() {
-        handler.removeCallbacks(displayUpdateRunnable);
-        handler.post(displayUpdateRunnable);
+        handler.removeCallbacks(updateRunnable);
+        handler.post(updateRunnable);
     }
     
     private void stopUpdating() {
-        handler.removeCallbacks(displayUpdateRunnable);
+        handler.removeCallbacks(updateRunnable);
     }
     
-    private void calculateFps(long frameTimeNanos) {
-        frameCount++;
-        
-        if (lastFpsUpdateTime == 0) {
-            lastFpsUpdateTime = frameTimeNanos;
-            return;
+    private void updateMetrics() {
+        if (showFps) {
+            try {
+                currentFps = TouchHLENative.getCurrentFps();
+            } catch (Exception e) {
+                currentFps = 0;
+            }
         }
         
-        long elapsedTime = frameTimeNanos - lastFpsUpdateTime;
-        
-        if (elapsedTime >= UPDATE_INTERVAL_NS) {
-            currentFps = (int) ((frameCount * 1000000000L) / elapsedTime);
-            frameCount = 0;
-            lastFpsUpdateTime = frameTimeNanos;
+        if (showRam) {
+            calculateRam();
         }
     }
     
@@ -215,6 +184,5 @@ public class PerformanceOverlayView extends View {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         stopUpdating();
-        choreographer.removeFrameCallback(frameCallback);
     }
 }

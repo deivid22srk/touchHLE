@@ -3,7 +3,7 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 #[cfg(target_os = "android")]
 use jni::objects::{JClass, JObjectArray, JString};
 #[cfg(target_os = "android")]
-use jni::sys::{jobjectArray, jstring};
+use jni::sys::{jobjectArray, jint, jstring};
 #[cfg(target_os = "android")]
 use jni::JNIEnv;
 #[cfg(target_os = "android")]
@@ -226,4 +226,13 @@ fn image_to_png_bytes(image: &Image) -> Result<Vec<u8>, String> {
             .map_err(|e| format!("Failed to write PNG data: {e}"))?;
     }
     Ok(buffer)
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "C" fn Java_org_touchhle_android_TouchHLENative_getCurrentFps(
+    _env: JNIEnv,
+    _class: JClass,
+) -> jint {
+    crate::window::get_current_fps() as jint
 }

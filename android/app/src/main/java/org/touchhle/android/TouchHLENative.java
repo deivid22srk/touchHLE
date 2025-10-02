@@ -13,4 +13,6 @@ public final class TouchHLENative {
     public static native void clearLaunch();
 
     public static native String inspectBundle(String absolutePath);
+    
+    public static native int getCurrentFps();
 }
