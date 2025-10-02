@@ -44,8 +44,8 @@ android {
         def branding = getTouchHLEBranding()
         applicationId 'org.touchhle.android'
         applicationIdSuffix(branding.isEmpty() ? null : branding.toLowerCase())
-        resValue 'string', 'app_name', join('touchHLE', ' ', branding)
-        buildConfigField 'String', 'APP_NAME', ('"' + join('touchHLE', ' ', branding) + '"')
+        resValue 'string', 'app_name', 'Orion'
+        buildConfigField 'String', 'APP_NAME', '"Orion"'
         manifestPlaceholders = [
                 icon: join('@drawable/icon', '_', branding.toLowerCase())
         ]
