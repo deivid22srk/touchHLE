@@ -164,6 +164,9 @@ dependencies {
     // Document picker
     implementation 'androidx.documentfile:documentfile:1.0.1'
     
+    // DrawerLayout
+    implementation 'androidx.drawerlayout:drawerlayout:1.1.1'
+    
     // Core AndroidX
     implementation 'androidx.core:core:1.9.0'
     implementation 'androidx.annotation:annotation:1.5.0'

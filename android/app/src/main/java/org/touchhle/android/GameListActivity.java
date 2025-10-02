@@ -25,7 +25,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 
 import org.json.JSONException;
@@ -48,7 +47,6 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
     private TextInputEditText searchEditText;
     private View emptyStateLayout;
     private MaterialButton changeFolderButton;
-    private FloatingActionButton fileManagerFab;
 
     private GameAdapter gameAdapter;
     private final List<GameInfo> allGames = new ArrayList<>();
@@ -87,7 +85,6 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
         searchEditText = findViewById(R.id.searchEditText);
         emptyStateLayout = findViewById(R.id.emptyStateLayout);
         changeFolderButton = findViewById(R.id.changeFolderButton);
-        fileManagerFab = findViewById(R.id.fileManagerFab);
         defaultGameIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon);
 
         if (getSupportActionBar() != null) {
@@ -126,8 +123,6 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
             startActivity(new Intent(this, FolderSelectorActivity.class));
             finish();
         });
-
-        fileManagerFab.setOnClickListener(v -> openFileManager());
     }
 
     private void scanForGames() {
@@ -301,18 +296,6 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
             gamesRecyclerView.setVisibility(View.VISIBLE);
             emptyStateLayout.setVisibility(View.GONE);
             gamesCountText.setText(getString(R.string.games_found, gameCount));
-        }
-    }
-
-    private void openFileManager() {
-        try {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(android.provider.DocumentsContract.buildRootsUri(getPackageName() + ".provider"));
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
-                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            startActivity(intent);
-        } catch (Exception e) {
-            startActivity(new Intent(this, FolderSelectorActivity.class));
         }
     }
 

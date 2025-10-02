@@ -9,15 +9,23 @@
 package org.touchhle.android;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import org.libsdl.app.SDLActivity;
 
@@ -30,14 +38,25 @@ import java.io.IOException;
 public class MainActivity extends SDLActivity {
 
     private static final String TAG = "MainActivity";
+    private static final String PREFS_NAME = "PerformancePrefs";
+    private static final String PREF_SHOW_FPS = "show_fps";
+    private static final String PREF_SHOW_RAM = "show_ram";
 
     private File tempGameFile;
     private String tempGamePath;
     private String selectedGameName;
     private boolean forceFullscreen;
+    
+    private DrawerLayout drawerLayout;
+    private PerformanceOverlayView performanceOverlay;
+    private SwitchMaterial fpsSwitch;
+    private SwitchMaterial ramSwitch;
+    private FloatingActionButton drawerToggleFab;
+    private SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         Intent intent = getIntent();
         if (intent != null) {
             String gameUriString = intent.getStringExtra("game_uri");
@@ -86,6 +105,7 @@ public class MainActivity extends SDLActivity {
         }
 
         super.onCreate(savedInstanceState);
+        setupDrawerAndOverlay();
         applyFullscreenMode();
     }
 
@@ -162,5 +182,92 @@ public class MainActivity extends SDLActivity {
         tempGamePath = null;
         selectedGameName = null;
         TouchHLENative.clearLaunch();
+    }
+    
+    @Override
+    public void setContentView(View view) {
+        super.setContentView(R.layout.activity_main);
+        
+        drawerLayout = findViewById(R.id.drawerLayout);
+        FrameLayout mainContent = findViewById(R.id.mainContent);
+        drawerToggleFab = findViewById(R.id.drawerToggleFab);
+        
+        if (view != null && mainContent != null) {
+            mainContent.addView(view, 0, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ));
+        }
+    }
+    
+    private void setupDrawerAndOverlay() {
+        post(() -> {
+            if (drawerLayout == null) {
+                drawerLayout = findViewById(R.id.drawerLayout);
+            }
+            
+            if (drawerToggleFab == null) {
+                drawerToggleFab = findViewById(R.id.drawerToggleFab);
+            }
+            
+            if (drawerToggleFab != null) {
+                drawerToggleFab.setOnClickListener(v -> {
+                    if (drawerLayout != null) {
+                        if (drawerLayout.isDrawerOpen(Gravity.START)) {
+                            drawerLayout.closeDrawer(Gravity.START);
+                        } else {
+                            drawerLayout.openDrawer(Gravity.START);
+                        }
+                    }
+                });
+            }
+            
+            FrameLayout mainContent = findViewById(R.id.mainContent);
+            if (mainContent != null && performanceOverlay == null) {
+                performanceOverlay = new PerformanceOverlayView(this);
+                FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                );
+                mainContent.addView(performanceOverlay, params);
+            }
+            
+            fpsSwitch = findViewById(R.id.fpsSwitch);
+            ramSwitch = findViewById(R.id.ramSwitch);
+            
+            if (fpsSwitch != null && ramSwitch != null) {
+                boolean showFps = preferences.getBoolean(PREF_SHOW_FPS, false);
+                boolean showRam = preferences.getBoolean(PREF_SHOW_RAM, false);
+                
+                fpsSwitch.setChecked(showFps);
+                ramSwitch.setChecked(showRam);
+                
+                if (performanceOverlay != null) {
+                    performanceOverlay.setShowFps(showFps);
+                    performanceOverlay.setShowRam(showRam);
+                }
+                
+                fpsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (performanceOverlay != null) {
+                        performanceOverlay.setShowFps(isChecked);
+                    }
+                    preferences.edit().putBoolean(PREF_SHOW_FPS, isChecked).apply();
+                });
+                
+                ramSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (performanceOverlay != null) {
+                        performanceOverlay.setShowRam(isChecked);
+                    }
+                    preferences.edit().putBoolean(PREF_SHOW_RAM, isChecked).apply();
+                });
+            }
+        });
+    }
+    
+    private void post(Runnable runnable) {
+        View decorView = getWindow().getDecorView();
+        if (decorView != null) {
+            decorView.post(runnable);
+        }
     }
 }

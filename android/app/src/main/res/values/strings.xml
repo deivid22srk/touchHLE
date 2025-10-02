@@ -36,4 +36,10 @@
     <string name="fullscreen_label">Forçar tela cheia</string>
     <string name="settings_save">Fechar</string>
     <string name="settings_auto_save">As configurações são salvas automaticamente</string>
+    <string name="performance_monitor">Monitor de Desempenho</string>
+    <string name="show_fps">Mostrar FPS</string>
+    <string name="show_ram">Mostrar RAM</string>
+    <string name="performance_description">Monitore o desempenho do jogo em tempo real</string>
+    <string name="fps_format">FPS: %d</string>
+    <string name="ram_format">RAM: %.1f MB</string>
 </resources>
