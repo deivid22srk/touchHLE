@@ -11,8 +11,9 @@ use crate::Environment;
 use std::time::SystemTime;
 
 /// CACurrentMediaTime returns the current absolute time, in seconds.
-/// This is based on mach_absolute_time() and is relative to an arbitrary starting point.
-/// It's commonly used for animations and timing in Core Animation.
+/// This is based on mach_absolute_time() and is relative to an arbitrary
+/// starting point. It's commonly used for animations and timing in Core
+/// Animation.
 fn CACurrentMediaTime(_env: &mut Environment) -> CFTimeInterval {
     // CACurrentMediaTime is similar to CFAbsoluteTimeGetCurrent but uses
     // a monotonic clock based on mach_absolute_time.

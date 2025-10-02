@@ -872,9 +872,11 @@ pub const CLASSES: ClassExports = objc_classes! {
                                 withString:(id)replacement // NSString*
                                    options:(NSStringCompareOptions)options
                                      range:(NSRange)range {
-    // For now, we implement a simplified version that ignores options and range
-    // and calls the simpler version. This is sufficient for most use cases.
-    // TODO: Properly implement options (case insensitive, etc.) and range support
+    // For now, we implement a simplified version that ignores options and
+    // range and calls the simpler version. This is sufficient for most use
+    // cases.
+    // TODO: Properly implement options (case insensitive, etc.) and range
+    // support
     
     if range.location == 0 && range.length == NSNotFound {
         // If range covers entire string, use the simpler implementation
