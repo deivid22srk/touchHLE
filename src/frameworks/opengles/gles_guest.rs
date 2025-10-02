@@ -1960,7 +1960,7 @@ fn glGetVertexAttribPointerv(
             )
         };
         unsafe {
-            mem.write(pointer, guest_pointer.cast());
+            mem.write(pointer, MutVoidPtr::from_bits(guest_pointer.to_bits()));
         }
     });
 }

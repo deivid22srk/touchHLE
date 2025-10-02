@@ -6,7 +6,7 @@
 
 pub use touchHLE_gl_bindings::gles20 as gles20_raw;
 
-use crate::gles::gles11_raw::types::{GLclampx, GLfixed};
+
 use crate::gles::GLES;
 use crate::window::{GLContext, GLVersion, Window};
 use gles20::types::*;
@@ -36,7 +36,8 @@ macro_rules! forward_gles20_void {
 macro_rules! unsupported_gles2 {
     ($(unsafe fn $name:ident(&mut self $(, $arg:ident : $ty:ty)*) $(-> $ret:ty)?;)+) => {
         $(
-            unsafe fn $name(&mut self, $( _$arg: $ty ),*) $(-> $ret)? {
+            #[allow(unused_variables)]
+            unsafe fn $name(&mut self, $( $arg: $ty ),*) $(-> $ret)? {
                 panic!(concat!(stringify!($name), " is unsupported on OpenGL ES 2.0 backend"))
             }
         )+
