@@ -9,7 +9,7 @@
 //! - [Itanium C++ ABI specification](https://itanium-cxx-abi.github.io/cxx-abi/abi.html#dso-dtor-runtime-api)
 
 use crate::abi::GuestFunction;
-use crate::dyld::{export_c_func, FunctionExports};
+use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::mem::MutVoidPtr;
 use crate::Environment;
 
@@ -34,7 +34,20 @@ fn __cxa_finalize(_env: &mut Environment, d: MutVoidPtr) {
     log!("TODO: __cxa_finalize({:?}) (unimplemented)", d);
 }
 
+fn ___objc_personality_v0() -> i32 {
+    // This is the Objective-C personality function for exception handling
+    // For now, we just return 0 as we don't fully support exception handling
+    log!("TODO: ___objc_personality_v0 called (unimplemented)");
+    0
+}
+
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(__cxa_atexit(_, _, _)),
     export_c_func!(__cxa_finalize(_)),
+    export_c_func!(___objc_personality_v0()),
+];
+
+// Export the personality function as a constant pointer as well
+pub const CONSTANTS: ConstantExports = &[
+    ("____objc_personality_v0", HostConstant::NullPtr),
 ];

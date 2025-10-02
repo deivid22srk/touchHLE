@@ -489,6 +489,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "nibarchive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "561b2ff58709eb3bc2aab11f4a1ff2efecf7f01af30c028f8a8a7689cc00a8da"
+
+[[package]]
 name = "once_cell"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -916,6 +922,7 @@ dependencies = [
  "jni",
  "mach_object",
  "md5",
+ "nibarchive",
  "plist",
  "png",
  "quick-xml",

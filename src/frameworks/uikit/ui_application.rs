@@ -54,7 +54,17 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // This should only be called by UIApplicationMain
 - (id)init {
-    assert!(env.framework_state.uikit.ui_application.shared_application.is_none());
+    // Check if shared_application already exists
+    if let Some(existing_app) = env.framework_state.uikit.ui_application.shared_application {
+        if existing_app == this {
+            // Same instance, just return it
+            log!("UIApplication init called on existing instance, returning self");
+            return this;
+        } else {
+            // Different instance attempting to initialize
+            log!("Warning: UIApplication init called but shared_application already exists. Replacing with new instance.");
+        }
+    }
     env.framework_state.uikit.ui_application.shared_application = Some(this);
     this
 }

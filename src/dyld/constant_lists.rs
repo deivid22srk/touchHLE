@@ -7,8 +7,8 @@
 //! very long and frequently-updated list.
 
 use crate::frameworks::{
-    core_animation, core_foundation, core_graphics, foundation, game_kit, media_player, opengles,
-    uikit,
+    address_book, core_animation, core_foundation, core_graphics, core_location, foundation,
+    game_kit, media_player, opengles, uikit,
 };
 use crate::libc;
 
@@ -17,10 +17,13 @@ pub const CONSTANT_LISTS: &[super::ConstantExports] = &[
     libc::ctype::CONSTANTS,
     libc::stdio::CONSTANTS,
     libc::mach::init::CONSTANTS,
+    libc::cxxabi::CONSTANTS,
+    address_book::CONSTANTS,
     core_animation::ca_animation::CONSTANTS,
     core_animation::ca_layer::CONSTANTS,
     core_animation::ca_media_timing_function::CONSTANTS,
     core_foundation::cf_allocator::CONSTANTS,
+    core_foundation::cf_array::CONSTANTS,
     core_foundation::cf_bundle::CONSTANTS,
     core_foundation::cf_dictionary::CONSTANTS,
     core_foundation::cf_locale::CONSTANTS,
@@ -30,7 +33,9 @@ pub const CONSTANT_LISTS: &[super::ConstantExports] = &[
     core_graphics::cg_affine_transform::CONSTANTS,
     core_graphics::cg_color_space::CONSTANTS,
     core_graphics::cg_geometry::CONSTANTS,
+    core_location::CONSTANTS,
     game_kit::gk_local_player::CONSTANTS,
+    foundation::CONSTANTS,
     foundation::ns_error::CONSTANTS,
     foundation::ns_exception::CONSTANTS,
     foundation::ns_file_manager::CONSTANTS,
@@ -42,6 +47,7 @@ pub const CONSTANT_LISTS: &[super::ConstantExports] = &[
     opengles::eagl::CONSTANTS,
     uikit::ui_application::CONSTANTS,
     uikit::ui_device::CONSTANTS,
+    uikit::ui_image_picker_controller::CONSTANTS,
     uikit::ui_view::ui_control::ui_text_field::CONSTANTS,
     uikit::ui_view::ui_window::CONSTANTS,
 ];

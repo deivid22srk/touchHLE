@@ -5,6 +5,7 @@
  */
 //! `UIImagePickerController`
 
+use crate::dyld::{ConstantExports, HostConstant};
 use crate::frameworks::foundation::NSInteger;
 use crate::objc::{id, objc_classes, ClassExports};
 
@@ -31,3 +32,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 @end
 
 };
+
+// UIImagePickerController constants
+const UIImagePickerControllerOriginalImage: &str = "UIImagePickerControllerOriginalImage";
+
+pub const CONSTANTS: ConstantExports = &[
+    ("_UIImagePickerControllerOriginalImage", HostConstant::NSString(UIImagePickerControllerOriginalImage)),
+];

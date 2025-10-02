@@ -10,7 +10,7 @@
 
 use super::cf_allocator::{kCFAllocatorDefault, CFAllocatorRef};
 use super::CFIndex;
-use crate::dyld::{export_c_func, FunctionExports};
+use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::frameworks::foundation::NSUInteger;
 use crate::mem::ConstVoidPtr;
 use crate::objc::{id, msg, msg_class};
@@ -60,4 +60,10 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(CFArrayGetValueAtIndex(_, _)),
     export_c_func!(CFArrayAppendValue(_, _)),
     export_c_func!(CFArrayRemoveValueAtIndex(_, _)),
+];
+
+pub const CONSTANTS: ConstantExports = &[
+    // kCFTypeArrayCallBacks is used for standard retain/release behavior
+    // We export it as a null pointer since we handle this internally
+    ("_kCFTypeArrayCallBacks", HostConstant::NullPtr),
 ];
