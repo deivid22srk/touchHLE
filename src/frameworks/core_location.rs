@@ -14,7 +14,9 @@
 //! you know, **GAMES**.
 
 use crate::dyld::{ConstantExports, HostConstant};
+use crate::mem::ConstVoidPtr;
 use crate::objc::{id, objc_classes, ClassExports};
+use crate::Environment;
 
 type CLLocationAccuracy = f64;
 
@@ -56,8 +58,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 };
 
 // CLLocationAccuracy constants
-const kCLLocationAccuracyKilometer: f64 = 1000.0;
+fn kCLLocationAccuracyKilometer(_env: &mut Environment) -> ConstVoidPtr {
+    // Return a pointer to a static f64 value
+    // For constant numeric values, we return them as bit patterns
+    ConstVoidPtr::from_bits(1000f64.to_bits() as u32)
+}
 
 pub const CONSTANTS: ConstantExports = &[
-    ("_kCLLocationAccuracyKilometer", HostConstant::F64(kCLLocationAccuracyKilometer)),
+    ("_kCLLocationAccuracyKilometer", HostConstant::Custom(kCLLocationAccuracyKilometer)),
 ];

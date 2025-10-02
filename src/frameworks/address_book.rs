@@ -8,10 +8,14 @@
 //! This is a minimal implementation that just provides the necessary constants.
 
 use crate::dyld::{ConstantExports, HostConstant};
+use crate::mem::ConstVoidPtr;
+use crate::Environment;
 
 // ABPropertyID constants
-const kABPersonEmailProperty: i32 = 4; // Standard email property ID
+fn kABPersonEmailProperty(_env: &mut Environment) -> ConstVoidPtr {
+    ConstVoidPtr::from_bits(4)
+}
 
 pub const CONSTANTS: ConstantExports = &[
-    ("_kABPersonEmailProperty", HostConstant::I32(kABPersonEmailProperty)),
+    ("_kABPersonEmailProperty", HostConstant::Custom(kABPersonEmailProperty)),
 ];

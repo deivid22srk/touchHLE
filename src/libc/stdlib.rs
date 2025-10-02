@@ -6,7 +6,7 @@
 //! `stdlib.h`
 
 use crate::abi::{CallFromHost, GuestFunction};
-use crate::dyld::{export_c_func, export_c_func_aliased, FunctionExports};
+use crate::dyld::{export_c_func, export_c_func_aliased, ConstantExports, FunctionExports, HostConstant};
 use crate::fs::{resolve_path, GuestPath};
 use crate::libc::clocale::{setlocale, LC_CTYPE};
 use crate::libc::errno::set_errno;
@@ -523,6 +523,16 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(mbstowcs(_, _, _)),
     export_c_func!(wcstombs(_, _, _)),
     export_c_func!(system(_)),
+];
+
+// __mb_cur_max is a global variable that holds the maximum number of bytes
+// in a multibyte character for the current locale. Default is 1 (ASCII).
+fn ___mb_cur_max(_env: &mut Environment) -> ConstVoidPtr {
+    ConstVoidPtr::from_bits(1)
+}
+
+pub const CONSTANTS: ConstantExports = &[
+    ("____mb_cur_max", HostConstant::Custom(___mb_cur_max)),
 ];
 
 /// A simple wrapper around [atof_inner_generic] for the case of C string.

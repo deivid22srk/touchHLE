@@ -16,8 +16,8 @@ use crate::libc;
 pub const CONSTANT_LISTS: &[super::ConstantExports] = &[
     libc::ctype::CONSTANTS,
     libc::stdio::CONSTANTS,
+    libc::stdlib::CONSTANTS,
     libc::mach::init::CONSTANTS,
-    libc::cxxabi::CONSTANTS,
     address_book::CONSTANTS,
     core_animation::ca_animation::CONSTANTS,
     core_animation::ca_layer::CONSTANTS,
