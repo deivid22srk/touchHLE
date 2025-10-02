@@ -72,7 +72,6 @@ mod util;
 
 use touchHLE_gl_bindings::gl21compat as gl21compat_raw;
 pub use touchHLE_gl_bindings::gles11 as gles11_raw;
-pub use touchHLE_gl_bindings::gles20 as gles20_raw;
 
 use gles1_native::GLES1Native;
 use gles1_on_gl2::GLES1OnGL2;

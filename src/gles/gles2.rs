@@ -6,7 +6,7 @@
 
 pub use touchHLE_gl_bindings::gles20 as gles20_raw;
 
-
+use crate::gles::gles11_raw::types::{GLclampx, GLfixed};
 use crate::gles::GLES;
 use crate::window::{GLContext, GLVersion, Window};
 use gles20::types::*;
