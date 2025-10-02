@@ -1996,7 +1996,7 @@ fn glShaderBinary(
         let shaders_ptr = if n_usize == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(shaders, n_usize)
+            mem.ptr_at(shaders, n_usize.try_into().unwrap())
         };
         let binary_ptr = if length_usize == 0 {
             std::ptr::null()
