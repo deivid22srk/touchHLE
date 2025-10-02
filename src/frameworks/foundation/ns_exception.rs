@@ -10,6 +10,8 @@ use crate::{export_c_func, Environment};
 
 // All constants are NSExceptionName
 pub const CONSTANTS: ConstantExports = &[
+    ("_OBJC_EHTYPE_$_NSException", HostConstant::NullPtr),
+    ("_OBJC_EHTYPE_id", HostConstant::NullPtr),
     (
         "_NSCharacterConversionException",
         HostConstant::NSString("NSCharacterConversionException"),

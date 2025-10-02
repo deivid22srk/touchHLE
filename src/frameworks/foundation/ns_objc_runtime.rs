@@ -1,7 +1,7 @@
 //! Things from `NSObjCRuntime.h`.
 
 use super::ns_string;
-use crate::dyld::{export_c_func, FunctionExports};
+use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::objc::{id, nil, Class, SEL};
 use crate::Environment;
 
@@ -46,4 +46,9 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(NSSelectorFromString(_)),
     export_c_func!(NSClassFromString(_)),
     export_c_func!(NSStringFromClass(_)),
+];
+
+pub const CONSTANTS: ConstantExports = &[
+    ("__NSConcreteGlobalBlock", HostConstant::NullPtr),
+    ("__NSConcreteStackBlock", HostConstant::NullPtr),
 ];

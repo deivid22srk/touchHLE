@@ -251,8 +251,8 @@ pub fn main<T: Iterator<Item = String>>(mut args: T) -> Result<(), String> {
             .map_or(minor_etc, |(minor, _etc)| minor);
         let major: u32 = major.parse().unwrap();
         let minor: u32 = minor.parse().unwrap();
-        if major > 3 || (major == 3 && minor > 0) {
-            echo!("Warning: app requires OS version {}. Only iPhone OS 2.x and iPhone OS 3.0 apps are currently supported.", version);
+        if major > 3 || (major == 3 && minor > 2) {
+            echo!("Warning: app requires OS version {}. Only iPhone OS 2.x, 3.0, 3.1 and 3.2 apps are currently supported.", version);
         }
     }
 

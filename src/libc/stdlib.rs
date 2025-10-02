@@ -264,6 +264,9 @@ fn exit(env: &mut Environment, exit_code: i32) {
     // TODO: handle errno properly
     set_errno(env, 0);
 
+    // TODO: call atexit handlers
+    super::cxxabi::__cxa_finalize(env, Ptr::null());
+
     echo!("App called exit(), exiting.");
     std::process::exit(exit_code);
 }

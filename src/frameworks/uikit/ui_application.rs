@@ -446,6 +446,12 @@ const UIApplicationDidReceiveMemoryWarningNotification: &str =
 
 /// `UIApplicationLaunchOptionsKey` and `NSNotificationName` values.
 /// (Both types are strings)
+const UILocalNotificationDefaultSoundName: &str = "UILocalNotificationDefaultSoundName";
+const UIApplicationLaunchOptionsLocalNotificationKey: &str =
+    "UIApplicationLaunchOptionsLocalNotificationKey";
+
+/// `UIApplicationLaunchOptionsKey` and `NSNotificationName` values.
+/// (Both types are strings)
 pub const CONSTANTS: ConstantExports = &[
     (
         "_UIApplicationDidFinishLaunchingNotification",
@@ -479,6 +485,15 @@ pub const CONSTANTS: ConstantExports = &[
         "_UIApplicationLaunchOptionsRemoteNotificationKey",
         HostConstant::NSString(UIApplicationLaunchOptionsRemoteNotificationKey),
     ),
+    (
+        "_UIApplicationLaunchOptionsLocalNotificationKey",
+        HostConstant::NSString(UIApplicationLaunchOptionsLocalNotificationKey),
+    ),
+    (
+        "_UILocalNotificationDefaultSoundName",
+        HostConstant::NSString(UILocalNotificationDefaultSoundName),
+    ),
+    ("_UIBackgroundTaskInvalid", HostConstant::NullPtr),
 ];
 
 pub const FUNCTIONS: FunctionExports = &[export_c_func!(UIApplicationMain(_, _, _, _))];

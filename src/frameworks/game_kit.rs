@@ -10,5 +10,11 @@
 //! a `respondsToSelector:` call to some objects of this framework.
 //! Thus, we need to provide some stubs in order to not crash on that call.
 
+use crate::dyld::{ConstantExports, HostConstant};
+
 pub mod gk_local_player;
 pub mod gk_score;
+
+const GKErrorDomain: &str = "GKErrorDomain";
+
+pub const CONSTANTS: ConstantExports = &[("_GKErrorDomain", HostConstant::NSString(GKErrorDomain))];

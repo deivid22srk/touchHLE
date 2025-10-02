@@ -6,13 +6,24 @@ on:
   pull_request:
     branches: [ "trunk" ]
   workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build for'
+        required: true
+        default: 'All'
+        type: choice
+        options:
+        - All
+        - macOS
+        - Android
+        - Windows
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build-osx:
-
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.platform == 'All' || github.event.inputs.platform == 'macOS'
     runs-on: macos-latest
 
     steps:
@@ -82,7 +93,7 @@ jobs:
           path: tests/TestApp.app
 
   build-android:
-
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.platform == 'All' || github.event.inputs.platform == 'Android'
     runs-on: ubuntu-latest
 
     steps:
@@ -173,7 +184,7 @@ jobs:
         path: touchHLE.apk
 
   build-win:
-
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.platform == 'All' || github.event.inputs.platform == 'Windows'
     runs-on: windows-latest
 
     steps:

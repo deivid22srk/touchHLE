@@ -13,6 +13,7 @@ use crate::objc_classes;
 pub type NSErrorDomain = id;
 
 pub const NSOSStatusErrorDomain: &str = "NSOSStatusErrorDomain";
+pub const NSURLErrorDomain: &str = "NSURLErrorDomain";
 
 struct ErrorHostObject {
     domain: NSErrorDomain,
@@ -74,4 +75,5 @@ pub const CONSTANTS: ConstantExports = &[
         "_NSOSStatusErrorDomain",
         HostConstant::NSString(NSOSStatusErrorDomain),
     ),
+    ("_NSURLErrorDomain", HostConstant::NSString(NSURLErrorDomain)),
 ];

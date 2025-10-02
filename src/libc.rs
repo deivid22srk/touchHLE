@@ -42,6 +42,8 @@ pub mod time;
 pub mod unistd;
 pub mod wchar;
 
+use crate::{abi::GuestFunction, mem::MutVoidPtr};
+
 /// Container for state of various child modules
 #[derive(Default)]
 pub struct State {
@@ -59,4 +61,5 @@ pub struct State {
     errno: errno::State,
     clocale: clocale::State,
     mmap: mmap::State,
+    cxx_atexit_handlers: Vec<(GuestFunction, MutVoidPtr, MutVoidPtr)>,
 }
