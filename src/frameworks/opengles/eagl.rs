@@ -225,8 +225,8 @@ pub const CLASSES: ClassExports = objc_classes! {
             let gles1_ctx = create_gles1_ctx(window, &env.options);
 
             // Make the context active briefly so we can read the driver info.
-            // initWithAPI: must not leave that context current for the guest, so
-            // clear current_ctx_thread to force sync_context() to restore the
+            // initWithAPI must not leave that context current for the guest.
+            // Clearing current_ctx_thread forces sync_context() to restore the
             // expected state before the app issues GL calls.
             gles1_ctx.make_current(window);
             env.framework_state.opengles.current_ctx_thread = None;
