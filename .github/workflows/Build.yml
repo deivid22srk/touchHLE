@@ -2,9 +2,9 @@ name: 2Build touchHLE
 
 on:
   push:
-    branches: [ "trunk" ]
+    branches: [ "feature/manual-build-workflow" ]
   pull_request:
-    branches: [ "trunk" ]
+    branches: [ "feature/manual-build-workflow" ]
   workflow_dispatch:
     inputs:
       platform:
