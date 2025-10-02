@@ -160,10 +160,28 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
 
 fn create_array_in_objects(root: &mut Dictionary, uids: &[usize]) -> u64 {
     if let Some(Value::Array(objects)) = root.get_mut("$objects") {
-        let array_uid = objects.len() as u64;
+        let ns_array_class_uid = objects.len() as u64;
+        
+        let mut ns_array_class_dict = Dictionary::new();
+        ns_array_class_dict.insert("$classname".to_string(), Value::String("NSArray".to_string()));
+        ns_array_class_dict.insert(
+            "$classes".to_string(),
+            Value::Array(vec![
+                Value::String("NSArray".to_string()),
+                Value::String("NSObject".to_string()),
+            ]),
+        );
+        objects.push(Value::Dictionary(ns_array_class_dict));
+        
+        let array_obj_uid = objects.len() as u64;
+        let mut array_dict = Dictionary::new();
+        array_dict.insert("$class".to_string(), Value::Uid(Uid::new(ns_array_class_uid)));
+        
         let uid_array: Vec<Value> = uids.iter().map(|&uid| Value::Uid(Uid::new(uid as u64))).collect();
-        objects.push(Value::Array(uid_array));
-        array_uid
+        array_dict.insert("NS.objects".to_string(), Value::Array(uid_array));
+        
+        objects.push(Value::Dictionary(array_dict));
+        array_obj_uid
     } else {
         0
     }
