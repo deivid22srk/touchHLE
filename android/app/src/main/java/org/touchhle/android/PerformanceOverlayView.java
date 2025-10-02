@@ -6,13 +6,14 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.Debug;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.View;
 
 public class PerformanceOverlayView extends View {
-    private static final int UPDATE_INTERVAL_MS = 500;
+    private static final int UPDATE_INTERVAL_MS = 1000;
     
     private Paint textPaint;
     private Paint backgroundPaint;
@@ -27,11 +28,8 @@ public class PerformanceOverlayView extends View {
     private long frameCount = 0;
     private long lastFpsUpdateTime = 0;
     
-    private ActivityManager activityManager;
-    private ActivityManager.MemoryInfo memoryInfo;
-    
-    private int textSize = 40;
-    private int padding = 20;
+    private int textSize = 28;
+    private int padding = 16;
     
     public PerformanceOverlayView(Context context) {
         super(context);
@@ -51,26 +49,31 @@ public class PerformanceOverlayView extends View {
         textPaint.setShadowLayer(4, 2, 2, Color.BLACK);
         
         backgroundPaint = new Paint();
-        backgroundPaint.setColor(Color.argb(180, 0, 0, 0));
-        
-        activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        memoryInfo = new ActivityManager.MemoryInfo();
+        backgroundPaint.setColor(Color.argb(200, 0, 0, 0));
         
         handler = new Handler(Looper.getMainLooper());
         updateRunnable = new Runnable() {
             @Override
             public void run() {
-                updateMetrics();
+                if (showRam) {
+                    calculateRam();
+                }
                 if (showFps || showRam) {
                     invalidate();
                     handler.postDelayed(this, UPDATE_INTERVAL_MS);
                 }
             }
         };
+        
+        lastFpsUpdateTime = System.currentTimeMillis();
     }
     
     public void setShowFps(boolean show) {
         this.showFps = show;
+        if (show) {
+            frameCount = 0;
+            lastFpsUpdateTime = System.currentTimeMillis();
+        }
         updateVisibility();
     }
     
@@ -98,24 +101,9 @@ public class PerformanceOverlayView extends View {
         handler.removeCallbacks(updateRunnable);
     }
     
-    private void updateMetrics() {
-        if (showFps) {
-            calculateFps();
-        }
-        
-        if (showRam) {
-            calculateRam();
-        }
-    }
-    
     private void calculateFps() {
         frameCount++;
         long currentTime = System.currentTimeMillis();
-        
-        if (lastFpsUpdateTime == 0) {
-            lastFpsUpdateTime = currentTime;
-        }
-        
         long elapsedTime = currentTime - lastFpsUpdateTime;
         
         if (elapsedTime >= 1000) {
@@ -126,13 +114,15 @@ public class PerformanceOverlayView extends View {
     }
     
     private void calculateRam() {
-        if (activityManager != null) {
-            activityManager.getMemoryInfo(memoryInfo);
-            long usedMemory = memoryInfo.totalMem - memoryInfo.availMem;
-            currentRamMB = usedMemory / (1024.0f * 1024.0f);
-            
+        Debug.MemoryInfo memoryInfo = new Debug.MemoryInfo();
+        Debug.getMemoryInfo(memoryInfo);
+        
+        int totalPss = memoryInfo.getTotalPss();
+        currentRamMB = totalPss / 1024.0f;
+        
+        if (currentRamMB < 1.0f) {
             Runtime runtime = Runtime.getRuntime();
-            long appMemory = runtime.totalMemory() - runtime.freeMemory();
+            long appMemory = (runtime.totalMemory() - runtime.freeMemory());
             currentRamMB = appMemory / (1024.0f * 1024.0f);
         }
     }
@@ -141,60 +131,64 @@ public class PerformanceOverlayView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         
+        if (showFps) {
+            calculateFps();
+        }
+        
         if (!showFps && !showRam) {
             return;
         }
         
-        int yOffset = padding + 40;
+        int yOffset = padding + 20;
         
         if (showFps) {
             String fpsText = String.format("FPS: %d", currentFps);
             Rect bounds = new Rect();
             textPaint.getTextBounds(fpsText, 0, fpsText.length(), bounds);
             
-            int boxWidth = bounds.width() + padding * 4;
-            int boxHeight = bounds.height() + padding * 3;
+            int boxWidth = bounds.width() + padding * 3;
+            int boxHeight = bounds.height() + padding * 2;
             
             canvas.drawRoundRect(
                 padding,
                 yOffset,
                 padding + boxWidth,
                 yOffset + boxHeight,
-                16, 16,
+                12, 12,
                 backgroundPaint
             );
             
             canvas.drawText(
                 fpsText,
                 padding * 2,
-                yOffset + bounds.height() + padding * 1.5f,
+                yOffset + bounds.height() + padding,
                 textPaint
             );
             
-            yOffset += boxHeight + padding;
+            yOffset += boxHeight + padding / 2;
         }
         
         if (showRam) {
-            String ramText = String.format("RAM: %.1f MB", currentRamMB);
+            String ramText = String.format("RAM: %.0f MB", currentRamMB);
             Rect bounds = new Rect();
             textPaint.getTextBounds(ramText, 0, ramText.length(), bounds);
             
-            int boxWidth = bounds.width() + padding * 4;
-            int boxHeight = bounds.height() + padding * 3;
+            int boxWidth = bounds.width() + padding * 3;
+            int boxHeight = bounds.height() + padding * 2;
             
             canvas.drawRoundRect(
                 padding,
                 yOffset,
                 padding + boxWidth,
                 yOffset + boxHeight,
-                16, 16,
+                12, 12,
                 backgroundPaint
             );
             
             canvas.drawText(
                 ramText,
                 padding * 2,
-                yOffset + bounds.height() + padding * 1.5f,
+                yOffset + bounds.height() + padding,
                 textPaint
             );
         }
