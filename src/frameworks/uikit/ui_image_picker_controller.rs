@@ -36,6 +36,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // UIImagePickerController constants
 const UIImagePickerControllerOriginalImage: &str = "UIImagePickerControllerOriginalImage";
 
-pub const CONSTANTS: ConstantExports = &[
-    ("_UIImagePickerControllerOriginalImage", HostConstant::NSString(UIImagePickerControllerOriginalImage)),
-];
+pub const CONSTANTS: ConstantExports = &[(
+    "_UIImagePickerControllerOriginalImage",
+    HostConstant::NSString(UIImagePickerControllerOriginalImage),
+)];

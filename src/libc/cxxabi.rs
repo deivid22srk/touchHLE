@@ -44,4 +44,3 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(__cxa_finalize(_)),
     export_c_func!(___objc_personality_v0()),
 ];
-

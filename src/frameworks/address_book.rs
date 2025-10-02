@@ -16,6 +16,7 @@ fn kABPersonEmailProperty(_env: &mut Environment) -> ConstVoidPtr {
     ConstVoidPtr::from_bits(4)
 }
 
-pub const CONSTANTS: ConstantExports = &[
-    ("_kABPersonEmailProperty", HostConstant::Custom(kABPersonEmailProperty)),
-];
+pub const CONSTANTS: ConstantExports = &[(
+    "_kABPersonEmailProperty",
+    HostConstant::Custom(kABPersonEmailProperty),
+)];

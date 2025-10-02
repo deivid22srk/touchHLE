@@ -146,14 +146,30 @@ const NSUnderlyingErrorKey: &str = "NSUnderlyingError";
 
 pub const CONSTANTS: ConstantExports = &[
     // Calendar identifiers
-    ("_NSGregorianCalendar", HostConstant::NSString(NSGregorianCalendar)),
-    
+    (
+        "_NSGregorianCalendar",
+        HostConstant::NSString(NSGregorianCalendar),
+    ),
     // HTTP Cookie keys
-    ("_NSHTTPCookieName", HostConstant::NSString(NSHTTPCookieName)),
-    ("_NSHTTPCookieValue", HostConstant::NSString(NSHTTPCookieValue)),
-    ("_NSHTTPCookiePath", HostConstant::NSString(NSHTTPCookiePath)),
-    ("_NSHTTPCookieDomain", HostConstant::NSString(NSHTTPCookieDomain)),
-    
+    (
+        "_NSHTTPCookieName",
+        HostConstant::NSString(NSHTTPCookieName),
+    ),
+    (
+        "_NSHTTPCookieValue",
+        HostConstant::NSString(NSHTTPCookieValue),
+    ),
+    (
+        "_NSHTTPCookiePath",
+        HostConstant::NSString(NSHTTPCookiePath),
+    ),
+    (
+        "_NSHTTPCookieDomain",
+        HostConstant::NSString(NSHTTPCookieDomain),
+    ),
     // Error keys
-    ("_NSUnderlyingErrorKey", HostConstant::NSString(NSUnderlyingErrorKey)),
+    (
+        "_NSUnderlyingErrorKey",
+        HostConstant::NSString(NSUnderlyingErrorKey),
+    ),
 ];

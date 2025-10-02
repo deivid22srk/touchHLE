@@ -64,6 +64,7 @@ fn kCLLocationAccuracyKilometer(_env: &mut Environment) -> ConstVoidPtr {
     ConstVoidPtr::from_bits(1000f64.to_bits() as u32)
 }
 
-pub const CONSTANTS: ConstantExports = &[
-    ("_kCLLocationAccuracyKilometer", HostConstant::Custom(kCLLocationAccuracyKilometer)),
-];
+pub const CONSTANTS: ConstantExports = &[(
+    "_kCLLocationAccuracyKilometer",
+    HostConstant::Custom(kCLLocationAccuracyKilometer),
+)];

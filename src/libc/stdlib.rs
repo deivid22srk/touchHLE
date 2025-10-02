@@ -6,7 +6,9 @@
 //! `stdlib.h`
 
 use crate::abi::{CallFromHost, GuestFunction};
-use crate::dyld::{export_c_func, export_c_func_aliased, ConstantExports, FunctionExports, HostConstant};
+use crate::dyld::{
+    export_c_func, export_c_func_aliased, ConstantExports, FunctionExports, HostConstant,
+};
 use crate::fs::{resolve_path, GuestPath};
 use crate::libc::clocale::{setlocale, LC_CTYPE};
 use crate::libc::errno::set_errno;
@@ -531,9 +533,7 @@ fn ___mb_cur_max(_env: &mut Environment) -> ConstVoidPtr {
     ConstVoidPtr::from_bits(1)
 }
 
-pub const CONSTANTS: ConstantExports = &[
-    ("____mb_cur_max", HostConstant::Custom(___mb_cur_max)),
-];
+pub const CONSTANTS: ConstantExports = &[("____mb_cur_max", HostConstant::Custom(___mb_cur_max))];
 
 /// A simple wrapper around [atof_inner_generic] for the case of C string.
 pub fn atof_inner(
