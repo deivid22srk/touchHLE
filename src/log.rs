@@ -22,7 +22,7 @@ pub fn get_log_file() -> &'static File {
 }
 
 #[cfg(target_os = "android")]
-fn log_to_logcat(message: &str) {
+pub(crate) fn log_to_logcat(message: &str) {
     use libc::{c_char, c_int};
     use std::borrow::Cow;
     use std::ffi::CString;
@@ -100,7 +100,7 @@ macro_rules! echo {
 
             #[cfg(target_os = "android")]
             {
-                log_to_logcat(&formatted_str);
+                $crate::log::log_to_logcat(&formatted_str);
             }
             #[cfg(not(target_os = "android"))]
             eprintln!("{}", formatted_str);
@@ -115,7 +115,7 @@ macro_rules! echo {
         {
             #[cfg(target_os = "android")]
             {
-                log_to_logcat("");
+                $crate::log::log_to_logcat("");
             }
             #[cfg(not(target_os = "android"))]
             eprintln!("");
