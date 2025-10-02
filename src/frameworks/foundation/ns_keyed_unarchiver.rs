@@ -495,10 +495,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)decodeObjectForKey:(id)key { // NSString*
-    let Some(value) = get_value_to_decode_for_key(env, this, key) else {
+    let value_opt = get_value_to_decode_for_key(env, this, key);
+    let Some(value) = value_opt else {
         return nil;
     };
-    let object = unarchive_value_owned(env, this, value);
+    let value_cloned = value.clone();
+    let object = unarchive_value_owned(env, this, &value_cloned);
 
     if object == nil {
         nil
@@ -624,6 +626,10 @@ fn unarchive_value_owned(env: &mut Environment, unarchiver: id, value: &Value) -
             msg![env; date initWithTimeIntervalSinceReferenceDate:interval]
         }
         Value::Uid(_) => unreachable!(),
+        _ => {
+            log!("Warning: Unhandled plist::Value variant in unarchive_value_owned");
+            nil
+        }
     }
 }
 
