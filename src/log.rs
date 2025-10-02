@@ -23,7 +23,7 @@ pub fn get_log_file() -> &'static File {
 
 #[cfg(target_os = "android")]
 pub(crate) fn log_to_logcat(message: &str) {
-    use libc::{c_char, c_int};
+    use core::ffi::{c_char, c_int};
     use std::borrow::Cow;
     use std::ffi::CString;
 
