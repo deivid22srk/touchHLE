@@ -224,11 +224,10 @@ pub const CLASSES: ClassExports = objc_classes! {
                 .expect("OpenGL ES is not supported in headless mode");
             let gles1_ctx = create_gles1_ctx(window, &env.options);
 
-            // Make the context current so we can get driver info from it.
-            // initWithAPI: is not supposed to make the new context current (the app
-            // must call setCurrentContext: for that), so we need to hide this from the
-            // app. Setting current_ctx_thread to None should cause sync_context to
-            // switch back to the right context if the app makes an OpenGL ES call.
+            // Make the context active briefly so we can read the driver info.
+            // initWithAPI: must not leave that context current for the guest, so
+            // clear current_ctx_thread to force sync_context() to restore the
+            // expected state before the app issues GL calls.
             gles1_ctx.make_current(window);
             env.framework_state.opengles.current_ctx_thread = None;
             log!("Driver info: {}", unsafe { gles1_ctx.driver_description() });
