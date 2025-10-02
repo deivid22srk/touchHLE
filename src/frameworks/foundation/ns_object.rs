@@ -69,6 +69,15 @@ pub const CLASSES: ClassExports = objc_classes! {
     true
 }
 
++ (id)description { // NSString*
+    let class_name = env.objc.get_class_name(this);
+    from_rust_string(env, class_name.to_string())
+}
+
++ (id)debugDescription { // NSString*
+    msg![env; this description]
+}
+
 - (id)init {
     this
 }
@@ -142,15 +151,6 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)debugDescription { // NSString*
-    msg![env; this description]
-}
-
-+ (id)description { // NSString*
-    let class_name = env.objc.get_class_name(this);
-    from_rust_string(env, class_name.to_string())
-}
-
-+ (id)debugDescription { // NSString*
     msg![env; this description]
 }
 
