@@ -215,47 +215,51 @@ public class MainActivity extends SDLActivity {
                 mainContent.addView(performanceOverlay, params);
             }
             
-            fpsSwitch = findViewById(R.id.fpsSwitch);
-            ramSwitch = findViewById(R.id.ramSwitch);
-            exitGameButton = findViewById(R.id.exitGameButton);
-            
-            if (exitGameButton != null) {
-                exitGameButton.setOnClickListener(v -> {
-                    finish();
-                });
-            }
-            
-            if (fpsSwitch != null && ramSwitch != null) {
-                boolean showFps = preferences.getBoolean(PREF_SHOW_FPS, false);
-                boolean showRam = preferences.getBoolean(PREF_SHOW_RAM, false);
+            // Get views from NavigationView
+            View navigationView = findViewById(R.id.navigationView);
+            if (navigationView != null) {
+                fpsSwitch = navigationView.findViewById(R.id.fpsSwitch);
+                ramSwitch = navigationView.findViewById(R.id.ramSwitch);
+                exitGameButton = navigationView.findViewById(R.id.exitGameButton);
                 
-                fpsSwitch.setChecked(showFps);
-                ramSwitch.setChecked(showRam);
-                
-                if (performanceOverlay != null) {
-                    performanceOverlay.setShowFps(showFps);
-                    performanceOverlay.setShowRam(showRam);
+                if (exitGameButton != null) {
+                    exitGameButton.setOnClickListener(v -> {
+                        finish();
+                    });
                 }
                 
-                fpsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (fpsSwitch != null && ramSwitch != null) {
+                    boolean showFps = preferences.getBoolean(PREF_SHOW_FPS, false);
+                    boolean showRam = preferences.getBoolean(PREF_SHOW_RAM, false);
+                    
+                    fpsSwitch.setChecked(showFps);
+                    ramSwitch.setChecked(showRam);
+                    
                     if (performanceOverlay != null) {
-                        performanceOverlay.setShowFps(isChecked);
+                        performanceOverlay.setShowFps(showFps);
+                        performanceOverlay.setShowRam(showRam);
                     }
-                    preferences.edit().putBoolean(PREF_SHOW_FPS, isChecked).apply();
-                    if (drawerLayout != null) {
-                        drawerLayout.closeDrawer(Gravity.START);
-                    }
-                });
-                
-                ramSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    if (performanceOverlay != null) {
-                        performanceOverlay.setShowRam(isChecked);
-                    }
-                    preferences.edit().putBoolean(PREF_SHOW_RAM, isChecked).apply();
-                    if (drawerLayout != null) {
-                        drawerLayout.closeDrawer(Gravity.START);
-                    }
-                });
+                    
+                    fpsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                        if (performanceOverlay != null) {
+                            performanceOverlay.setShowFps(isChecked);
+                        }
+                        preferences.edit().putBoolean(PREF_SHOW_FPS, isChecked).apply();
+                        if (drawerLayout != null) {
+                            drawerLayout.closeDrawer(Gravity.START);
+                        }
+                    });
+                    
+                    ramSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                        if (performanceOverlay != null) {
+                            performanceOverlay.setShowRam(isChecked);
+                        }
+                        preferences.edit().putBoolean(PREF_SHOW_RAM, isChecked).apply();
+                        if (drawerLayout != null) {
+                            drawerLayout.closeDrawer(Gravity.START);
+                        }
+                    });
+                }
             }
         });
     }

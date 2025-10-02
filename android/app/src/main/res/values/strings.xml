@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">touchHLE</string>
+    <string name="app_name">Orion</string>
     <string name="select_games_folder">Selecionar Pasta de Jogos</string>
     <string name="games_folder_description">Escolha onde estão seus arquivos .ipa ou .app</string>
     <string name="browse_folder">Navegar</string>
