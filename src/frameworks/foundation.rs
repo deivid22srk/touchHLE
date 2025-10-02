@@ -17,6 +17,7 @@ use crate::Environment;
 
 pub mod ns_array;
 pub mod ns_autorelease_pool;
+pub mod ns_block;
 pub mod ns_bundle;
 pub mod ns_character_set;
 pub mod ns_coder;

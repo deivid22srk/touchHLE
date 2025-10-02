@@ -94,19 +94,19 @@ impl FpsCounter {
             current_fps: 0,
         }
     }
-    
+
     fn record_frame(&mut self) {
         self.frame_count += 1;
         let now = Instant::now();
         let elapsed = now.duration_since(self.last_update);
-        
+
         if elapsed >= Duration::from_secs(1) {
             self.current_fps = (self.frame_count as f64 / elapsed.as_secs_f64()) as u32;
             self.frame_count = 0;
             self.last_update = now;
         }
     }
-    
+
     fn get_fps(&self) -> u32 {
         self.current_fps
     }
@@ -118,10 +118,7 @@ fn fps_counter() -> &'static Mutex<FpsCounter> {
 }
 
 pub fn get_current_fps() -> u32 {
-    fps_counter()
-        .lock()
-        .map(|c| c.get_fps())
-        .unwrap_or(0)
+    fps_counter().lock().map(|c| c.get_fps()).unwrap_or(0)
 }
 
 #[derive(Debug)]

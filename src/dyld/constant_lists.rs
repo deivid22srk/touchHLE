@@ -36,6 +36,7 @@ pub const CONSTANT_LISTS: &[super::ConstantExports] = &[
     core_location::CONSTANTS,
     game_kit::gk_local_player::CONSTANTS,
     foundation::CONSTANTS,
+    foundation::ns_block::CONSTANTS,
     foundation::ns_error::CONSTANTS,
     foundation::ns_exception::CONSTANTS,
     foundation::ns_file_manager::CONSTANTS,

@@ -3,7 +3,7 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 #[cfg(target_os = "android")]
 use jni::objects::{JClass, JObjectArray, JString};
 #[cfg(target_os = "android")]
-use jni::sys::{jobjectArray, jint, jstring};
+use jni::sys::{jint, jobjectArray, jstring};
 #[cfg(target_os = "android")]
 use jni::JNIEnv;
 #[cfg(target_os = "android")]

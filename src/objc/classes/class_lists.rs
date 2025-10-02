@@ -29,6 +29,7 @@ pub const CLASS_LISTS: &[super::ClassExports] = &[
     game_kit::gk_score::CLASSES,
     foundation::ns_array::CLASSES,
     foundation::ns_autorelease_pool::CLASSES,
+    foundation::ns_block::CLASSES,
     foundation::ns_bundle::CLASSES,
     foundation::ns_character_set::CLASSES,
     foundation::ns_coder::CLASSES,
