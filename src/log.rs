@@ -7,6 +7,8 @@
 
 use std::fs::File;
 use std::sync::LazyLock;
+#[cfg(target_os = "android")]
+use std::os::raw::{c_char, c_int};
 
 /// Get a handle to the log file. This is only for use by logging macros!
 ///
@@ -23,7 +25,6 @@ pub fn get_log_file() -> &'static File {
 
 #[cfg(target_os = "android")]
 pub(crate) fn log_to_logcat(message: &str) {
-    use std::ffi::{c_char, c_int};
     use std::borrow::Cow;
     use std::ffi::CString;
 
