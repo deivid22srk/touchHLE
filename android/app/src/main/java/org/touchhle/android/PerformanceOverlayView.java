@@ -30,8 +30,8 @@ public class PerformanceOverlayView extends View {
     private ActivityManager activityManager;
     private ActivityManager.MemoryInfo memoryInfo;
     
-    private int textSize = 36;
-    private int padding = 16;
+    private int textSize = 40;
+    private int padding = 20;
     
     public PerformanceOverlayView(Context context) {
         super(context);
@@ -145,29 +145,29 @@ public class PerformanceOverlayView extends View {
             return;
         }
         
-        int yOffset = padding;
+        int yOffset = padding + 40;
         
         if (showFps) {
             String fpsText = String.format("FPS: %d", currentFps);
             Rect bounds = new Rect();
             textPaint.getTextBounds(fpsText, 0, fpsText.length(), bounds);
             
-            int boxWidth = bounds.width() + padding * 2;
-            int boxHeight = bounds.height() + padding * 2;
+            int boxWidth = bounds.width() + padding * 4;
+            int boxHeight = bounds.height() + padding * 3;
             
             canvas.drawRoundRect(
                 padding,
                 yOffset,
                 padding + boxWidth,
                 yOffset + boxHeight,
-                12, 12,
+                16, 16,
                 backgroundPaint
             );
             
             canvas.drawText(
                 fpsText,
                 padding * 2,
-                yOffset + bounds.height() + padding,
+                yOffset + bounds.height() + padding * 1.5f,
                 textPaint
             );
             
@@ -179,22 +179,22 @@ public class PerformanceOverlayView extends View {
             Rect bounds = new Rect();
             textPaint.getTextBounds(ramText, 0, ramText.length(), bounds);
             
-            int boxWidth = bounds.width() + padding * 2;
-            int boxHeight = bounds.height() + padding * 2;
+            int boxWidth = bounds.width() + padding * 4;
+            int boxHeight = bounds.height() + padding * 3;
             
             canvas.drawRoundRect(
                 padding,
                 yOffset,
                 padding + boxWidth,
                 yOffset + boxHeight,
-                12, 12,
+                16, 16,
                 backgroundPaint
             );
             
             canvas.drawText(
                 ramText,
                 padding * 2,
-                yOffset + bounds.height() + padding,
+                yOffset + bounds.height() + padding * 1.5f,
                 textPaint
             );
         }

@@ -10,20 +10,7 @@
         android:id="@+id/mainContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
         <!-- Performance overlay will be added here programmatically -->
-        
-        <!-- Floating button to open drawer -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/drawerToggleFab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_margin="16dp"
-            android:contentDescription="@string/performance_monitor"
-            app:fabSize="mini"
-            app:srcCompat="@android:drawable/ic_menu_manage" />
-
     </FrameLayout>
 
     <!-- Navigation drawer -->
@@ -32,7 +19,8 @@
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="?attr/colorSurface">
+        android:background="?attr/colorSurface"
+        android:fitsSystemWindows="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -43,9 +31,9 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:paddingTop="8dp"
-                android:text="@string/performance_monitor"
+                android:layout_marginBottom="24dp"
+                android:paddingTop="16dp"
+                android:text="@string/game_menu"
                 android:textAppearance="?android:attr/textAppearanceLarge"
                 android:textColor="?attr/colorOnSurface"
                 android:textStyle="bold" />
@@ -63,6 +51,15 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="@string/performance_monitor"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textStyle="bold" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -75,7 +72,7 @@
                             android:layout_height="24dp"
                             android:contentDescription="FPS Icon"
                             android:src="@android:drawable/ic_menu_info_details"
-                            android:tint="?attr/colorPrimary" />
+                            app:tint="?attr/colorPrimary" />
 
                         <TextView
                             android:layout_width="0dp"
@@ -111,7 +108,7 @@
                             android:layout_height="24dp"
                             android:contentDescription="RAM Icon"
                             android:src="@android:drawable/ic_menu_compass"
-                            android:tint="?attr/colorPrimary" />
+                            app:tint="?attr/colorPrimary" />
 
                         <TextView
                             android:layout_width="0dp"
@@ -136,9 +133,20 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
                 android:text="@string/performance_description"
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 android:textColor="?android:attr/textColorSecondary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/exitGameButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/exit_game"
+                android:textColor="?attr/colorOnError"
+                app:backgroundTint="?attr/colorError"
+                app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                app:iconGravity="start" />
 
         </LinearLayout>
 

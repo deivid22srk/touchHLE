@@ -42,4 +42,6 @@
     <string name="performance_description">Monitore o desempenho do jogo em tempo real</string>
     <string name="fps_format">FPS: %d</string>
     <string name="ram_format">RAM: %.1f MB</string>
+    <string name="game_menu">Menu do Jogo</string>
+    <string name="exit_game">Sair do Jogo</string>
 </resources>

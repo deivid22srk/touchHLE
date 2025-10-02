@@ -24,7 +24,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import org.libsdl.app.SDLActivity;
@@ -51,7 +51,7 @@ public class MainActivity extends SDLActivity {
     private PerformanceOverlayView performanceOverlay;
     private SwitchMaterial fpsSwitch;
     private SwitchMaterial ramSwitch;
-    private FloatingActionButton drawerToggleFab;
+    private MaterialButton exitGameButton;
     private SharedPreferences preferences;
 
     @Override
@@ -190,7 +190,6 @@ public class MainActivity extends SDLActivity {
         
         drawerLayout = findViewById(R.id.drawerLayout);
         FrameLayout mainContent = findViewById(R.id.mainContent);
-        drawerToggleFab = findViewById(R.id.drawerToggleFab);
         
         if (view != null && mainContent != null) {
             mainContent.addView(view, 0, new FrameLayout.LayoutParams(
@@ -206,22 +205,6 @@ public class MainActivity extends SDLActivity {
                 drawerLayout = findViewById(R.id.drawerLayout);
             }
             
-            if (drawerToggleFab == null) {
-                drawerToggleFab = findViewById(R.id.drawerToggleFab);
-            }
-            
-            if (drawerToggleFab != null) {
-                drawerToggleFab.setOnClickListener(v -> {
-                    if (drawerLayout != null) {
-                        if (drawerLayout.isDrawerOpen(Gravity.START)) {
-                            drawerLayout.closeDrawer(Gravity.START);
-                        } else {
-                            drawerLayout.openDrawer(Gravity.START);
-                        }
-                    }
-                });
-            }
-            
             FrameLayout mainContent = findViewById(R.id.mainContent);
             if (mainContent != null && performanceOverlay == null) {
                 performanceOverlay = new PerformanceOverlayView(this);
@@ -234,6 +217,13 @@ public class MainActivity extends SDLActivity {
             
             fpsSwitch = findViewById(R.id.fpsSwitch);
             ramSwitch = findViewById(R.id.ramSwitch);
+            exitGameButton = findViewById(R.id.exitGameButton);
+            
+            if (exitGameButton != null) {
+                exitGameButton.setOnClickListener(v -> {
+                    finish();
+                });
+            }
             
             if (fpsSwitch != null && ramSwitch != null) {
                 boolean showFps = preferences.getBoolean(PREF_SHOW_FPS, false);
@@ -252,6 +242,9 @@ public class MainActivity extends SDLActivity {
                         performanceOverlay.setShowFps(isChecked);
                     }
                     preferences.edit().putBoolean(PREF_SHOW_FPS, isChecked).apply();
+                    if (drawerLayout != null) {
+                        drawerLayout.closeDrawer(Gravity.START);
+                    }
                 });
                 
                 ramSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -259,6 +252,9 @@ public class MainActivity extends SDLActivity {
                         performanceOverlay.setShowRam(isChecked);
                     }
                     preferences.edit().putBoolean(PREF_SHOW_RAM, isChecked).apply();
+                    if (drawerLayout != null) {
+                        drawerLayout.closeDrawer(Gravity.START);
+                    }
                 });
             }
         });
