@@ -2005,13 +2005,7 @@ fn glShaderBinary(
             mem.ptr_at(binary, length_usize.try_into().unwrap())
         };
         unsafe {
-            gles.ShaderBinary(
-                n,
-                shaders_ptr,
-                binaryformat,
-                binary_ptr.cast(),
-                length,
-            );
+            gles.ShaderBinary(n, shaders_ptr, binaryformat, binary_ptr.cast(), length);
         }
     });
 }
@@ -2036,12 +2030,7 @@ fn glShaderSource(
             mem.ptr_at(length, count_usize.try_into().unwrap())
         };
         unsafe {
-            gles.ShaderSource(
-                shader,
-                count,
-                string_ptr.cast(),
-                length_ptr,
-            );
+            gles.ShaderSource(shader, count, string_ptr.cast(), length_ptr);
         }
     });
 }
