@@ -6,6 +6,7 @@
 //! `CALayer`.
 
 use crate::dyld::{ConstantExports, HostConstant};
+use crate::frameworks::core_graphics::cg_affine_transform::{CGAffineTransform, CGAffineTransformIdentity};
 use crate::frameworks::core_graphics::cg_bitmap_context::{
     CGBitmapContextCreate, CGBitmapContextGetHeight, CGBitmapContextGetWidth,
 };
@@ -39,6 +40,7 @@ pub(super) struct CALayerHostObject {
     pub(super) background_color: CGColorRef,
     pub(super) corner_radius: CGFloat,
     pub(super) needs_display: bool,
+    pub(super) affine_transform: CGAffineTransform,
     /// `CGImageRef*`
     pub(super) contents: id,
     /// For CAEAGLLayer only
@@ -93,6 +95,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         background_color: nil, // transparency
         corner_radius: 0.0,
         needs_display: false,
+        affine_transform: CGAffineTransformIdentity,
         contents: nil,
         drawable_properties: nil,
         presented_pixels: None,
@@ -286,6 +289,13 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 - (())setCornerRadius:(CGFloat)corner_radius {
     env.objc.borrow_mut::<CALayerHostObject>(this).corner_radius = corner_radius;
+}
+
+- (CGAffineTransform)affineTransform {
+    env.objc.borrow::<CALayerHostObject>(this).affine_transform
+}
+- (())setAffineTransform:(CGAffineTransform)transform {
+    env.objc.borrow_mut::<CALayerHostObject>(this).affine_transform = transform;
 }
 
 - (bool)needsDisplay {

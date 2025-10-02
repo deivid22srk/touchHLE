@@ -37,15 +37,20 @@ type MPMovieLoadState = NSInteger;
 // MPMoviePlaybackState values
 const MPMoviePlaybackStateStopped: MPMoviePlaybackState = 0;
 const MPMoviePlaybackStatePlaying: MPMoviePlaybackState = 1;
+#[allow(dead_code)]
 const MPMoviePlaybackStatePaused: MPMoviePlaybackState = 2;
+#[allow(dead_code)]
 const MPMoviePlaybackStateInterrupted: MPMoviePlaybackState = 3;
+#[allow(dead_code)]
 const MPMoviePlaybackStateSeekingForward: MPMoviePlaybackState = 4;
+#[allow(dead_code)]
 const MPMoviePlaybackStateSeekingBackward: MPMoviePlaybackState = 5;
 
 // MPMovieLoadState values
 const MPMovieLoadStateUnknown: MPMovieLoadState = 0;
 const MPMovieLoadStatePlayable: MPMovieLoadState = 1 << 0;
 const MPMovieLoadStatePlaythroughOK: MPMovieLoadState = 1 << 1;
+#[allow(dead_code)]
 const MPMovieLoadStateStalled: MPMovieLoadState = 1 << 2;
 
 // Notification names
@@ -111,8 +116,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)initWithContentURL:(id)url { // NSURL*
-    log!(
-        "TODO: [(MPMoviePlayerController*){:?} initWithContentURL:{:?} ({:?})]",
+    log_dbg!(
+        "[(MPMoviePlayerController*){:?} initWithContentURL:{:?} ({:?})]",
         this,
         url,
         ns_url::to_rust_path(env, url),
@@ -178,7 +183,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // MPMediaPlayback implementation
 - (())play {
-    log!("TODO: [(MPMoviePlayerController*){:?} play]", this);
+    log_dbg!("[(MPMoviePlayerController*){:?} play]", this);
     if let Some(old) = env.framework_state.media_player.movie_player.active_player {
         let _: () = msg![env; old stop];
     }
@@ -204,7 +209,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())stop {
-    log!("TODO: [(MPMoviePlayerController*){:?} stop]", this);
+    log_dbg!("[(MPMoviePlayerController*){:?} stop]", this);
     assert!(this == env.framework_state.media_player.movie_player.active_player.take().unwrap());
     
     // Update playback state
