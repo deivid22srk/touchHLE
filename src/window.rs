@@ -1172,6 +1172,10 @@ impl Window {
 
         let (screen_width, screen_height) = self.window.drawable_size();
 
+        if Self::rotatable_fullscreen() && self.fullscreen {
+            return (0, 0, screen_width, screen_height);
+        }
+
         let app_aspect = app_width as f32 / app_height as f32;
         let screen_aspect = screen_width as f32 / screen_height as f32;
         let (scaled_width, scaled_height) = if app_aspect < screen_aspect {

@@ -34,5 +34,6 @@
     <string name="analog_stick_label">Usar analógicos como controle de inclinação</string>
     <string name="network_label">Permitir acesso à rede</string>
     <string name="fullscreen_label">Forçar tela cheia</string>
-    <string name="settings_save">Salvar</string>
+    <string name="settings_save">Fechar</string>
+    <string name="settings_auto_save">As configurações são salvas automaticamente</string>
 </resources>

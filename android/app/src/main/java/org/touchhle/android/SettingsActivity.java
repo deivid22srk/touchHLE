@@ -1,6 +1,7 @@
 package org.touchhle.android;
 
 import android.os.Bundle;
+import android.widget.CompoundButton;
 import android.widget.RadioGroup;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -36,7 +37,8 @@ public class SettingsActivity extends AppCompatActivity {
         MaterialButton saveButton = findViewById(R.id.saveButton);
 
         applySavedValues();
-        saveButton.setOnClickListener(v -> saveAndClose());
+        setupAutoSave();
+        saveButton.setOnClickListener(v -> finish());
     }
 
     private void applySavedValues() {
@@ -112,5 +114,26 @@ public class SettingsActivity extends AppCompatActivity {
             return SettingsManager.ORIENTATION_RIGHT;
         }
         return SettingsManager.ORIENTATION_DEFAULT;
+    }
+
+    private void setupAutoSave() {
+        CompoundButton.OnCheckedChangeListener switchListener = (buttonView, isChecked) -> saveSettings();
+        RadioGroup.OnCheckedChangeListener radioListener = (group, checkedId) -> saveSettings();
+
+        analogSwitch.setOnCheckedChangeListener(switchListener);
+        networkSwitch.setOnCheckedChangeListener(switchListener);
+        fullscreenSwitch.setOnCheckedChangeListener(switchListener);
+        scaleHackGroup.setOnCheckedChangeListener(radioListener);
+        orientationGroup.setOnCheckedChangeListener(radioListener);
+    }
+
+    private void saveSettings() {
+        int scaleHack = resolveScaleHack();
+        int orientation = resolveOrientation();
+        boolean analog = analogSwitch.isChecked();
+        boolean network = networkSwitch.isChecked();
+        boolean fullscreen = fullscreenSwitch.isChecked();
+
+        SettingsManager.saveAll(this, scaleHack, orientation, analog, network, fullscreen);
     }
 }
