@@ -1,6 +1,5 @@
 package org.touchhle.android;
 
-import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -10,15 +9,17 @@ import android.os.Debug;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
+import android.view.Choreographer;
 import android.view.View;
 
 public class PerformanceOverlayView extends View {
-    private static final int UPDATE_INTERVAL_MS = 1000;
+    private static final long UPDATE_INTERVAL_NS = 1000000000L; // 1 segundo em nanosegundos
+    private static final long REFRESH_DISPLAY_INTERVAL_MS = 100; // Atualiza display a cada 100ms
     
     private Paint textPaint;
     private Paint backgroundPaint;
     private Handler handler;
-    private Runnable updateRunnable;
+    private Runnable displayUpdateRunnable;
     
     private boolean showFps = false;
     private boolean showRam = false;
@@ -27,6 +28,8 @@ public class PerformanceOverlayView extends View {
     
     private long frameCount = 0;
     private long lastFpsUpdateTime = 0;
+    private Choreographer choreographer;
+    private Choreographer.FrameCallback frameCallback;
     
     private int textSize = 28;
     private int padding = 16;
@@ -51,8 +54,20 @@ public class PerformanceOverlayView extends View {
         backgroundPaint = new Paint();
         backgroundPaint.setColor(Color.argb(200, 0, 0, 0));
         
+        choreographer = Choreographer.getInstance();
         handler = new Handler(Looper.getMainLooper());
-        updateRunnable = new Runnable() {
+        
+        frameCallback = new Choreographer.FrameCallback() {
+            @Override
+            public void doFrame(long frameTimeNanos) {
+                calculateFps(frameTimeNanos);
+                if (showFps) {
+                    choreographer.postFrameCallback(this);
+                }
+            }
+        };
+        
+        displayUpdateRunnable = new Runnable() {
             @Override
             public void run() {
                 if (showRam) {
@@ -60,19 +75,20 @@ public class PerformanceOverlayView extends View {
                 }
                 if (showFps || showRam) {
                     invalidate();
-                    handler.postDelayed(this, UPDATE_INTERVAL_MS);
+                    handler.postDelayed(this, REFRESH_DISPLAY_INTERVAL_MS);
                 }
             }
         };
-        
-        lastFpsUpdateTime = System.currentTimeMillis();
     }
     
     public void setShowFps(boolean show) {
         this.showFps = show;
         if (show) {
             frameCount = 0;
-            lastFpsUpdateTime = System.currentTimeMillis();
+            lastFpsUpdateTime = 0;
+            choreographer.postFrameCallback(frameCallback);
+        } else {
+            choreographer.removeFrameCallback(frameCallback);
         }
         updateVisibility();
     }
@@ -93,23 +109,28 @@ public class PerformanceOverlayView extends View {
     }
     
     private void startUpdating() {
-        handler.removeCallbacks(updateRunnable);
-        handler.post(updateRunnable);
+        handler.removeCallbacks(displayUpdateRunnable);
+        handler.post(displayUpdateRunnable);
     }
     
     private void stopUpdating() {
-        handler.removeCallbacks(updateRunnable);
+        handler.removeCallbacks(displayUpdateRunnable);
     }
     
-    private void calculateFps() {
+    private void calculateFps(long frameTimeNanos) {
         frameCount++;
-        long currentTime = System.currentTimeMillis();
-        long elapsedTime = currentTime - lastFpsUpdateTime;
         
-        if (elapsedTime >= 1000) {
-            currentFps = (int) ((frameCount * 1000.0f) / elapsedTime);
+        if (lastFpsUpdateTime == 0) {
+            lastFpsUpdateTime = frameTimeNanos;
+            return;
+        }
+        
+        long elapsedTime = frameTimeNanos - lastFpsUpdateTime;
+        
+        if (elapsedTime >= UPDATE_INTERVAL_NS) {
+            currentFps = (int) ((frameCount * 1000000000L) / elapsedTime);
             frameCount = 0;
-            lastFpsUpdateTime = currentTime;
+            lastFpsUpdateTime = frameTimeNanos;
         }
     }
     
@@ -130,10 +151,6 @@ public class PerformanceOverlayView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        
-        if (showFps) {
-            calculateFps();
-        }
         
         if (!showFps && !showRam) {
             return;
@@ -198,5 +215,6 @@ public class PerformanceOverlayView extends View {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         stopUpdating();
+        choreographer.removeFrameCallback(frameCallback);
     }
 }
