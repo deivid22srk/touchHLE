@@ -31,9 +31,24 @@ impl State {
 }
 
 type MPMovieScalingMode = NSInteger;
+type MPMoviePlaybackState = NSInteger;
+type MPMovieLoadState = NSInteger;
 
-// Values might not be correct, but as these are linked symbol constants, it
-// shouldn't matter.
+// MPMoviePlaybackState values
+const MPMoviePlaybackStateStopped: MPMoviePlaybackState = 0;
+const MPMoviePlaybackStatePlaying: MPMoviePlaybackState = 1;
+const MPMoviePlaybackStatePaused: MPMoviePlaybackState = 2;
+const MPMoviePlaybackStateInterrupted: MPMoviePlaybackState = 3;
+const MPMoviePlaybackStateSeekingForward: MPMoviePlaybackState = 4;
+const MPMoviePlaybackStateSeekingBackward: MPMoviePlaybackState = 5;
+
+// MPMovieLoadState values
+const MPMovieLoadStateUnknown: MPMovieLoadState = 0;
+const MPMovieLoadStatePlayable: MPMovieLoadState = 1 << 0;
+const MPMovieLoadStatePlaythroughOK: MPMovieLoadState = 1 << 1;
+const MPMovieLoadStateStalled: MPMovieLoadState = 1 << 2;
+
+// Notification names
 pub const MPMoviePlayerPlaybackDidFinishNotification: &str =
     "MPMoviePlayerPlaybackDidFinishNotification";
 /// Apparently an undocumented, private API. Spore Origins uses it.
@@ -41,7 +56,10 @@ pub const MPMoviePlayerContentPreloadDidFinishNotification: &str =
     "MPMoviePlayerContentPreloadDidFinishNotification";
 pub const MPMoviePlayerScalingModeDidChangeNotification: &str =
     "MPMoviePlayerScalingModeDidChangeNotification";
-// TODO: More notifications?
+pub const MPMoviePlayerPlaybackStateDidChangeNotification: &str =
+    "MPMoviePlayerPlaybackStateDidChangeNotification";
+pub const MPMoviePlayerLoadStateDidChangeNotification: &str =
+    "MPMoviePlayerLoadStateDidChangeNotification";
 
 /// `NSNotificationName` values.
 pub const CONSTANTS: ConstantExports = &[
@@ -57,11 +75,21 @@ pub const CONSTANTS: ConstantExports = &[
         "_MPMoviePlayerScalingModeDidChangeNotification",
         HostConstant::NSString(MPMoviePlayerScalingModeDidChangeNotification),
     ),
+    (
+        "_MPMoviePlayerPlaybackStateDidChangeNotification",
+        HostConstant::NSString(MPMoviePlayerPlaybackStateDidChangeNotification),
+    ),
+    (
+        "_MPMoviePlayerLoadStateDidChangeNotification",
+        HostConstant::NSString(MPMoviePlayerLoadStateDidChangeNotification),
+    ),
 ];
 
 struct MPMoviePlayerControllerHostObject {
     // NSURL *
     content_url: id,
+    playback_state: MPMoviePlaybackState,
+    load_state: MPMovieLoadState,
 }
 impl HostObject for MPMoviePlayerControllerHostObject {}
 
@@ -76,6 +104,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 + (id)allocWithZone:(NSZonePtr)_zone {
     let host_object = Box::new(MPMoviePlayerControllerHostObject {
         content_url: nil,
+        playback_state: MPMoviePlaybackStateStopped,
+        load_state: MPMovieLoadStateUnknown,
     });
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
@@ -89,11 +119,16 @@ pub const CLASSES: ClassExports = objc_classes! {
     );
 
     retain(env, url);
-    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).content_url = url;
+    let host_obj = env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this);
+    host_obj.content_url = url;
+    host_obj.load_state = MPMovieLoadStatePlayable | MPMovieLoadStatePlaythroughOK;
 
     // Act as if loading immediately completed (Spore Origins waits for this).
     State::get(env).pending_notifications.push_back(
         (MPMoviePlayerContentPreloadDidFinishNotification, this)
+    );
+    State::get(env).pending_notifications.push_back(
+        (MPMoviePlayerLoadStateDidChangeNotification, this)
     );
 
     this
@@ -152,16 +187,41 @@ pub const CLASSES: ClassExports = objc_classes! {
     retain(env, this);
     env.framework_state.media_player.movie_player.active_player = Some(this);
 
+    // Update playback state
+    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).playback_state = MPMoviePlaybackStatePlaying;
+    State::get(env).pending_notifications.push_back(
+        (MPMoviePlayerPlaybackStateDidChangeNotification, this)
+    );
+
     // Act as if playback immediately completed (various apps wait for this).
+    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).playback_state = MPMoviePlaybackStateStopped;
     State::get(env).pending_notifications.push_back(
         (MPMoviePlayerPlaybackDidFinishNotification, this)
+    );
+    State::get(env).pending_notifications.push_back(
+        (MPMoviePlayerPlaybackStateDidChangeNotification, this)
     );
 }
 
 - (())stop {
     log!("TODO: [(MPMoviePlayerController*){:?} stop]", this);
     assert!(this == env.framework_state.media_player.movie_player.active_player.take().unwrap());
+    
+    // Update playback state
+    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).playback_state = MPMoviePlaybackStateStopped;
+    State::get(env).pending_notifications.push_back(
+        (MPMoviePlayerPlaybackStateDidChangeNotification, this)
+    );
+    
     release(env, this);
+}
+
+- (MPMoviePlaybackState)playbackState {
+    env.objc.borrow::<MPMoviePlayerControllerHostObject>(this).playback_state
+}
+
+- (MPMovieLoadState)loadState {
+    env.objc.borrow::<MPMoviePlayerControllerHostObject>(this).load_state
 }
 
 @end
