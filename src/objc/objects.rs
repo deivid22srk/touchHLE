@@ -239,13 +239,14 @@ impl super::ObjC {
     pub fn borrow<T: AnyHostObject + 'static>(&self, object: id) -> &T {
         let mut host_object: &(dyn AnyHostObject + 'static) =
             &*self.objects.get(&object).unwrap().host_object;
+        let requested_type = std::any::type_name::<T>();
         loop {
             if let Some(res) = host_object.as_any().downcast_ref() {
                 return res;
             } else if let Some(next) = host_object.as_superclass() {
                 host_object = next;
             } else {
-                panic!();
+                panic!("Failed to borrow object {:?} as type {}. The object does not match the requested type and has no more superclasses to check.", object, requested_type);
             }
         }
     }
@@ -258,6 +259,7 @@ impl super::ObjC {
         // used to bypass the borrow checker.
         type Aho = dyn AnyHostObject + 'static;
         let mut host_object: &mut Aho = &mut *self.objects.get_mut(&object).unwrap().host_object;
+        let requested_type = std::any::type_name::<T>();
         loop {
             if let Some(res) = unsafe { &mut *(host_object as *mut Aho) }
                 .as_any_mut()
@@ -267,7 +269,7 @@ impl super::ObjC {
             } else if let Some(next) = host_object.as_superclass_mut() {
                 host_object = next;
             } else {
-                panic!();
+                panic!("Failed to borrow_mut object {:?} as type {}. The object does not match the requested type and has no more superclasses to check.", object, requested_type);
             }
         }
     }

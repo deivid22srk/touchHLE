@@ -868,6 +868,69 @@ pub const CLASSES: ClassExports = objc_classes! {
     autorelease(env, result_ns_string)
 }
 
+- (id)stringByReplacingOccurrencesOfString:(id)target // NSString*
+                                withString:(id)replacement // NSString*
+                                   options:(NSStringCompareOptions)options
+                                     range:(NSRange)range {
+    // For now, we implement a simplified version that ignores options and range
+    // and calls the simpler version. This is sufficient for most use cases.
+    // TODO: Properly implement options (case insensitive, etc.) and range support
+    
+    if range.location == 0 && range.length == NSNotFound {
+        // If range covers entire string, use the simpler implementation
+        return msg![env; this stringByReplacingOccurrencesOfString:target
+                                                        withString:replacement];
+    }
+    
+    // For specific ranges, we need to extract substring, replace, and rebuild
+    let this_length: NSUInteger = msg![env; this length];
+    
+    // Validate range
+    let start = range.location;
+    let end = if range.length == NSNotFound {
+        this_length
+    } else {
+        std::cmp::min(start + range.length, this_length)
+    };
+    
+    if start >= this_length || start > end {
+        // Invalid range, return copy of original string
+        return msg![env; this copy];
+    }
+    
+    // Extract the parts
+    let prefix_range = NSRange { location: 0, length: start };
+    let middle_range = NSRange { location: start, length: end - start };
+    let suffix_start = end;
+    let suffix_length = if this_length > end { this_length - end } else { 0 };
+    let suffix_range = NSRange { location: suffix_start, length: suffix_length };
+    
+    // Get the three parts
+    let prefix: id = if prefix_range.length > 0 {
+        msg![env; this substringWithRange:prefix_range]
+    } else {
+        from_rust_string(env, String::new())
+    };
+    
+    let middle: id = msg![env; this substringWithRange:middle_range];
+    
+    let suffix: id = if suffix_range.length > 0 {
+        msg![env; this substringWithRange:suffix_range]
+    } else {
+        from_rust_string(env, String::new())
+    };
+    
+    // Replace in middle part
+    let replaced_middle: id = msg![env; middle stringByReplacingOccurrencesOfString:target
+                                                                          withString:replacement];
+    
+    // Concatenate all parts
+    let result: id = msg![env; prefix stringByAppendingString:replaced_middle];
+    let result: id = msg![env; result stringByAppendingString:suffix];
+    
+    autorelease(env, result)
+}
+
 - (id)stringByAppendingString:(id)other { // NSString*
     assert!(other != nil); // TODO: raise exception
 

@@ -11,6 +11,7 @@
 pub mod ca_animation;
 pub mod ca_eagl_layer;
 pub mod ca_layer;
+pub mod ca_media_timing;
 pub mod ca_media_timing_function;
 
 mod composition;
