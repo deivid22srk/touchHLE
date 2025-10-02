@@ -151,6 +151,7 @@ where
     f(gles, &mut env.mem)
 }
 
+#[allow(dead_code)]
 fn with_ctx_and_mem_gles2_no_skip<T, U>(env: &mut Environment, f: T) -> U
 where
     T: FnOnce(&mut dyn GLES2, &mut Mem) -> U,
@@ -574,14 +575,14 @@ fn glIsBuffer(env: &mut Environment, buffer: GLuint) -> GLboolean {
 fn glGenBuffers(env: &mut Environment, n: GLsizei, buffers: MutPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let buffers = mem.ptr_at_mut(buffers, n_usize.try_into().unwrap());
+        let buffers = mem.ptr_at_mut(buffers, n_usize);
         unsafe { gles.GenBuffers(n, buffers) }
     })
 }
 fn glDeleteBuffers(env: &mut Environment, n: GLsizei, buffers: ConstPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let buffers = mem.ptr_at(buffers, n_usize.try_into().unwrap());
+        let buffers = mem.ptr_at(buffers, n_usize);
         unsafe { gles.DeleteBuffers(n, buffers) }
     })
 }
@@ -971,14 +972,14 @@ fn glReadPixels(
 fn glGenTextures(env: &mut Environment, n: GLsizei, textures: MutPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let textures = mem.ptr_at_mut(textures, n_usize.try_into().unwrap());
+        let textures = mem.ptr_at_mut(textures, n_usize);
         unsafe { gles.GenTextures(n, textures) }
     })
 }
 fn glDeleteTextures(env: &mut Environment, n: GLsizei, textures: ConstPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let textures = mem.ptr_at(textures, n_usize.try_into().unwrap());
+        let textures = mem.ptr_at(textures, n_usize);
         unsafe { gles.DeleteTextures(n, textures) }
     })
 }
@@ -1237,14 +1238,14 @@ fn glTexEnviv(env: &mut Environment, target: GLenum, pname: GLenum, params: Cons
 fn glGenFramebuffersOES(env: &mut Environment, n: GLsizei, framebuffers: MutPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let framebuffers = mem.ptr_at_mut(framebuffers, n_usize.try_into().unwrap());
+        let framebuffers = mem.ptr_at_mut(framebuffers, n_usize);
         unsafe { gles.GenFramebuffersOES(n, framebuffers) }
     })
 }
 fn glGenRenderbuffersOES(env: &mut Environment, n: GLsizei, renderbuffers: MutPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let renderbuffers = mem.ptr_at_mut(renderbuffers, n_usize.try_into().unwrap());
+        let renderbuffers = mem.ptr_at_mut(renderbuffers, n_usize);
         unsafe { gles.GenRenderbuffersOES(n, renderbuffers) }
     })
 }
@@ -1342,14 +1343,14 @@ fn glCheckFramebufferStatusOES(env: &mut Environment, target: GLenum) -> GLenum 
 fn glDeleteFramebuffersOES(env: &mut Environment, n: GLsizei, framebuffers: ConstPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let framebuffers = mem.ptr_at(framebuffers, n_usize.try_into().unwrap());
+        let framebuffers = mem.ptr_at(framebuffers, n_usize);
         unsafe { gles.DeleteFramebuffersOES(n, framebuffers) }
     })
 }
 fn glDeleteRenderbuffersOES(env: &mut Environment, n: GLsizei, renderbuffers: ConstPtr<GLuint>) {
     with_ctx_and_mem(env, |gles, mem| {
         let n_usize: GuestUSize = n.try_into().unwrap();
-        let renderbuffers = mem.ptr_at(renderbuffers, n_usize.try_into().unwrap());
+        let renderbuffers = mem.ptr_at(renderbuffers, n_usize);
         unsafe { gles.DeleteRenderbuffersOES(n, renderbuffers) }
     })
 }
@@ -1995,7 +1996,7 @@ fn glShaderBinary(
         let shaders_ptr = if n_usize == 0 {
             std::ptr::null()
         } else {
-            mem.ptr_at(shaders, n_usize.try_into().unwrap())
+            mem.ptr_at(shaders, n_usize)
         };
         let binary_ptr = if length_usize == 0 {
             std::ptr::null()

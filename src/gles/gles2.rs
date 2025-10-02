@@ -64,6 +64,7 @@ pub trait GLES2: GLES {
     unsafe fn DetachShader(&mut self, program: GLuint, shader: GLuint);
     unsafe fn DisableVertexAttribArray(&mut self, index: GLuint);
     unsafe fn EnableVertexAttribArray(&mut self, index: GLuint);
+    #[allow(clippy::too_many_arguments)]
     unsafe fn GetActiveAttrib(
         &mut self,
         program: GLuint,
@@ -74,6 +75,7 @@ pub trait GLES2: GLES {
         type_: *mut GLenum,
         name: *mut GLchar,
     );
+    #[allow(clippy::too_many_arguments)]
     unsafe fn GetActiveUniform(
         &mut self,
         program: GLuint,

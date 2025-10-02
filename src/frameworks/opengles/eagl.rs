@@ -79,6 +79,7 @@ impl GlesContext {
         }
     }
 
+    #[allow(dead_code)]
     pub(super) fn as_gles(&self) -> &dyn GLES {
         match self {
             GlesContext::Gles1(ctx) => ctx.as_ref(),
@@ -93,6 +94,7 @@ impl GlesContext {
         }
     }
 
+    #[allow(dead_code)]
     pub(super) fn as_gles2(&self) -> Option<&dyn GLES2> {
         match self {
             GlesContext::Gles2(ctx) => Some(ctx.as_ref()),
@@ -127,6 +129,7 @@ impl EAGLContextHostObject {
         self.gles_ctx.as_mut().and_then(GlesContext::as_gles2_mut)
     }
 
+    #[allow(dead_code)]
     pub(super) fn ctx_gles2(&self) -> Option<&dyn GLES2> {
         self.gles_ctx.as_ref().and_then(GlesContext::as_gles2)
     }
