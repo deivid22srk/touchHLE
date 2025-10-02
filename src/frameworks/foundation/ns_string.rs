@@ -878,7 +878,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // TODO: Properly implement options (case insensitive, etc.) and range
     // support
     
-    if range.location == 0 && range.length == NSNotFound {
+    if range.location == 0 && range.length == NSNotFound as NSUInteger {
         // If range covers entire string, use the simpler implementation
         return msg![env; this stringByReplacingOccurrencesOfString:target
                                                         withString:replacement];
@@ -889,7 +889,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     
     // Validate range
     let start = range.location;
-    let end = if range.length == NSNotFound {
+    let end = if range.length == NSNotFound as NSUInteger {
         this_length
     } else {
         std::cmp::min(start + range.length, this_length)
