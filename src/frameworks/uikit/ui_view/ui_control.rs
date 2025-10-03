@@ -122,28 +122,28 @@ pub const CLASSES: ClassExports = objc_classes! {
 // NSCoding implementation
 - (id)initWithCoder:(id)coder {
     let this: id = msg_super![env; this initWithCoder:coder];
-    
+
     // Decode enabled state
     let enabled_key = get_static_str(env, "UIEnabled");
     if msg![env; coder containsValueForKey:enabled_key] {
         let enabled: bool = msg![env; coder decodeBoolForKey:enabled_key];
         () = msg![env; this setEnabled:enabled];
     }
-    
+
     // Decode selected state
     let selected_key = get_static_str(env, "UISelected");
     if msg![env; coder containsValueForKey:selected_key] {
         let selected: bool = msg![env; coder decodeBoolForKey:selected_key];
         () = msg![env; this setSelected:selected];
     }
-    
+
     // Decode highlighted state
     let highlighted_key = get_static_str(env, "UIHighlighted");
     if msg![env; coder containsValueForKey:highlighted_key] {
         let highlighted: bool = msg![env; coder decodeBoolForKey:highlighted_key];
         () = msg![env; this setHighlighted:highlighted];
     }
-    
+
     this
 }
 

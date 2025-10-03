@@ -155,14 +155,14 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (id)valueForProperty:(id)property { // NSString*
     use crate::frameworks::foundation::ns_string::to_rust_string;
-    
+
     if property == nil {
         return nil;
     }
-    
+
     let property_str = to_rust_string(env, property);
     let host_obj = env.objc.borrow::<MPMediaItemHostObject>(this);
-    
+
     if let Some(&value) = host_obj.properties.get(property_str.as_ref()) {
         value
     } else {
@@ -173,7 +173,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())dealloc {
     use crate::objc::release;
-    
+
     let values_to_release: Vec<_> = {
         let host_obj = env.objc.borrow_mut::<MPMediaItemHostObject>(this);
         host_obj.properties.drain()
@@ -181,11 +181,11 @@ pub const CLASSES: ClassExports = objc_classes! {
             .map(|(_, value)| value)
             .collect()
     };
-    
+
     for value in values_to_release {
         release(env, value);
     }
-    
+
     () = msg_super![env; this dealloc]
 }
 

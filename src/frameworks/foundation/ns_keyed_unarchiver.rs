@@ -566,7 +566,7 @@ fn unarchive_value_owned(env: &mut Environment, unarchiver: id, value: &Value) -
                 log!("Warning: Failed to create NSString during unarchive_value_owned for string: {:?}", s);
             }
             string_obj
-        },
+        }
         Value::Integer(int) => {
             #[allow(clippy::clone_on_copy)]
             let int = int.clone();
@@ -613,7 +613,10 @@ fn unarchive_value_owned(env: &mut Environment, unarchiver: id, value: &Value) -
             for (key, val) in dict.iter() {
                 let key_obj = from_rust_string(env, key.clone());
                 if key_obj == nil {
-                    log!("Warning: Failed to create key NSString for dictionary key: {:?}", key);
+                    log!(
+                        "Warning: Failed to create key NSString for dictionary key: {:?}",
+                        key
+                    );
                     continue; // Skip this pair
                 }
                 let value_obj = unarchive_value_owned(env, unarchiver, val);
@@ -680,8 +683,12 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
                     // to allow placeholders for unimplemented classes
                     // from NIBArchive files
                     let class_name = class_name.to_string();
-                    log_dbg!("NSKeyedUnarchiver: Unarchiving object of class '{}'", class_name);
-                    env.objc.link_class(&class_name, /* is_metaclass: */ false, &mut env.mem)
+                    log_dbg!(
+                        "NSKeyedUnarchiver: Unarchiving object of class '{}'",
+                        class_name
+                    );
+                    env.objc
+                        .link_class(&class_name, /* is_metaclass: */ false, &mut env.mem)
                 };
                 let host_obj = borrow_host_obj(env, unarchiver);
 
@@ -694,7 +701,10 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
 
             let new_object: id = msg![env; class alloc];
             if new_object == nil {
-                log!("Warning: Failed to allocate object of class during unarchiving at key {:?}", key);
+                log!(
+                    "Warning: Failed to allocate object of class during unarchiving at key {:?}",
+                    key
+                );
                 let host_obj = borrow_host_obj(env, unarchiver);
                 host_obj.current_key = old_current_key;
                 return nil;
@@ -707,7 +717,10 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
 
             let new_object: id = msg![env; new_object initWithCoder:unarchiver];
             if new_object == nil {
-                log!("Warning: initWithCoder returned nil during unarchiving at key {:?}", key);
+                log!(
+                    "Warning: initWithCoder returned nil during unarchiving at key {:?}",
+                    key
+                );
             }
 
             let host_obj = borrow_host_obj(env, unarchiver);
@@ -742,7 +755,10 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
     if new_object != nil {
         host_obj.already_unarchived[key.get() as usize] = Some(new_object);
     } else {
-        log_dbg!("Warning: Unarchived object at key {:?} is nil, not caching", key);
+        log_dbg!(
+            "Warning: Unarchived object at key {:?} is nil, not caching",
+            key
+        );
     }
     new_object
 }

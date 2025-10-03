@@ -147,7 +147,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())setDataSource:(id)data_source {
     use crate::objc::{release, retain};
-    
+
     let old = env.objc.borrow::<UITableViewHostObject>(this).data_source;
     if data_source != nil {
         retain(env, data_source);
@@ -164,7 +164,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())setDelegate:(id)delegate {
     use crate::objc::{release, retain};
-    
+
     let old = env.objc.borrow::<UITableViewHostObject>(this).delegate;
     if delegate != nil {
         retain(env, delegate);
@@ -204,19 +204,19 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())dealloc {
     use crate::objc::release;
-    
+
     let (data_source, delegate) = {
         let host_obj = env.objc.borrow_mut::<UITableViewHostObject>(this);
         (host_obj.data_source, host_obj.delegate)
     };
-    
+
     if data_source != nil {
         release(env, data_source);
     }
     if delegate != nil {
         release(env, delegate);
     }
-    
+
     () = msg_super![env; this dealloc]
 }
 
@@ -232,13 +232,13 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (id)initWithStyle:(UITableViewCellStyle)style
     reuseIdentifier:(id)reuse_identifier { // NSString*
     use crate::objc::retain;
-    
+
     // TODO: proper frame size
     let frame = CGRect {
         origin: CGPoint { x: 0.0, y: 0.0 },
         size: CGSize { width: 320.0, height: 44.0 },
     };
-    
+
     let this: id = msg![env; this initWithFrame:frame];
     if this != nil {
         {
@@ -246,33 +246,33 @@ pub const CLASSES: ClassExports = objc_classes! {
             host_obj.style = style;
             host_obj.reuse_identifier = reuse_identifier;
         }
-        
+
         if reuse_identifier != nil {
             retain(env, reuse_identifier);
         }
-        
+
         // Create content view
         let content_view: id = msg_class![env; UIView alloc];
         let content_view: id = msg![env; content_view initWithFrame:frame];
-        
+
         {
             let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
             host_obj.content_view = content_view;
         }
-        
+
         () = msg![env; this addSubview:content_view];
-        
+
         // Create text label
         let text_label: id = msg_class![env; UILabel alloc];
         let text_label: id = msg![env; text_label initWithFrame:frame];
-        
+
         {
             let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
             host_obj.text_label = text_label;
         }
-        
+
         () = msg![env; content_view addSubview:text_label];
-        
+
         log_dbg!("[(UITableViewCell*){:?} initWithStyle:{} reuseIdentifier:{:?}]", this, style, reuse_identifier);
     }
     this
@@ -282,7 +282,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     let this: id = msg_super![env; this initWithCoder:coder];
     if this != nil {
         log_dbg!("[(UITableViewCell*){:?} initWithCoder:{:?}]", this, coder);
-        
+
         // TODO: decode properties from coder
     }
     this
@@ -318,12 +318,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())dealloc {
     use crate::objc::release;
-    
+
     let (text_label, detail_text_label, image_view, content_view, reuse_identifier) = {
         let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
         (host_obj.text_label, host_obj.detail_text_label, host_obj.image_view, host_obj.content_view, host_obj.reuse_identifier)
     };
-    
+
     if text_label != nil {
         release(env, text_label);
     }
@@ -339,7 +339,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     if reuse_identifier != nil {
         release(env, reuse_identifier);
     }
-    
+
     () = msg_super![env; this dealloc]
 }
 

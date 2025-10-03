@@ -60,35 +60,35 @@ pub const CLASSES: ClassExports = objc_classes! {
 // NSCoding implementation
 - (id)initWithCoder:(id)coder {
     let this: id = msg_super![env; this initWithCoder:coder];
-    
+
     // Decode progress value
     let progress_key = get_static_str(env, "UIProgress");
     if msg![env; coder containsValueForKey:progress_key] {
         let progress: CGFloat = msg![env; coder decodeDoubleForKey:progress_key];
         () = msg![env; this setProgress:progress];
     }
-    
+
     // Decode progress view style
     let style_key = get_static_str(env, "UIProgressViewStyle");
     if msg![env; coder containsValueForKey:style_key] {
         let style: UIProgressViewStyle = msg![env; coder decodeIntForKey:style_key];
         env.objc.borrow_mut::<UIProgressViewHostObject>(this).progress_view_style = style;
     }
-    
+
     // Decode progress tint color
     let progress_tint_key = get_static_str(env, "UIProgressTintColor");
     let progress_tint: id = msg![env; coder decodeObjectForKey:progress_tint_key];
     if progress_tint != nil {
         () = msg![env; this setProgressTintColor:progress_tint];
     }
-    
+
     // Decode track tint color
     let track_tint_key = get_static_str(env, "UITrackTintColor");
     let track_tint: id = msg![env; coder decodeObjectForKey:track_tint_key];
     if track_tint != nil {
         () = msg![env; this setTrackTintColor:track_tint];
     }
-    
+
     this
 }
 

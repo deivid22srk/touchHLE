@@ -86,10 +86,7 @@ pub const CONSTANTS: ConstantExports = &[
         "_NSLocalizedRecoverySuggestionErrorKey",
         HostConstant::NSString(NSLocalizedRecoverySuggestionErrorKey),
     ),
-    (
-        "_NSURLErrorKey",
-        HostConstant::NSString(NSURLErrorKey),
-    ),
+    ("_NSURLErrorKey", HostConstant::NSString(NSURLErrorKey)),
     (
         "_NSFilePathErrorKey",
         HostConstant::NSString(NSFilePathErrorKey),

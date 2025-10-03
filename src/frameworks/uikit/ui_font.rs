@@ -139,18 +139,18 @@ pub const CLASSES: ClassExports = objc_classes! {
     // Decode font name
     let font_name_key = get_static_str(env, "UIFontName");
     let font_name: id = msg![env; coder decodeObjectForKey:font_name_key];
-    
+
     // Decode font size
     let font_size_key = get_static_str(env, "UIFontPointSize");
     let font_size: CGFloat = msg![env; coder decodeDoubleForKey:font_size_key];
-    
+
     let font_name_str = if font_name != crate::objc::nil {
         to_rust_string(env, font_name).to_string()
     } else {
         // Default to system font if no name provided
         "Helvetica".to_string()
     };
-    
+
     let host_object = UIFontHostObject {
         kind: get_equivalent_font(&font_name_str).unwrap_or_else(|| {
             log_dbg!("No replacement found for font {} in NIB. Using system font.", font_name_str);
@@ -158,10 +158,10 @@ pub const CLASSES: ClassExports = objc_classes! {
         }),
         size: if font_size > 0.0 { font_size } else { 12.0 }, // Default size
     };
-    
+
     env.objc.borrow_mut::<UIFontHostObject>(this).size = host_object.size;
     env.objc.borrow_mut::<UIFontHostObject>(this).kind = host_object.kind;
-    
+
     this
 }
 

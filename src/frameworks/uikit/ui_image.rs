@@ -145,7 +145,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // Try to decode UIResourceName first (most common in NIBs)
     let resource_name_key = get_static_str(env, "UIResourceName");
     let resource_name: id = msg![env; coder decodeObjectForKey:resource_name_key];
-    
+
     if resource_name != nil {
         // Load image by name (uses cache)
         let image: id = msg_class![env; UIImage imageNamed:resource_name];
@@ -156,11 +156,11 @@ pub const CLASSES: ClassExports = objc_classes! {
             return this;
         }
     }
-    
+
     // Try to decode UIImageData (embedded image data)
     let image_data_key = get_static_str(env, "UIImageData");
     let image_data: id = msg![env; coder decodeObjectForKey:image_data_key];
-    
+
     if image_data != nil {
         let slice = ns_data::to_rust_slice(env, image_data);
         if let Ok(image) = Image::from_bytes(slice) {
@@ -169,7 +169,7 @@ pub const CLASSES: ClassExports = objc_classes! {
             return this;
         }
     }
-    
+
     log!("Warning: UIImage initWithCoder: could not decode image");
     this
 }

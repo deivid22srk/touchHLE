@@ -59,21 +59,21 @@ pub const CLASSES: ClassExports = objc_classes! {
 // NSCoding implementation
 - (id)initWithCoder:(id)coder {
     let this: id = msg_super![env; this initWithCoder:coder];
-    
+
     // Decode bar style
     let bar_style_key = get_static_str(env, "UIBarStyle");
     if msg![env; coder containsValueForKey:bar_style_key] {
         let bar_style: UIBarStyle = msg![env; coder decodeIntForKey:bar_style_key];
         () = msg![env; this setBarStyle:bar_style];
     }
-    
+
     // Decode tint color
     let tint_color_key = get_static_str(env, "UITintColor");
     let tint_color: id = msg![env; coder decodeObjectForKey:tint_color_key];
     if tint_color != nil {
         () = msg![env; this setTintColor:tint_color];
     }
-    
+
     // Decode items
     let items_key = get_static_str(env, "UIItems");
     let items: id = msg![env; coder decodeObjectForKey:items_key];
@@ -81,7 +81,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         retain(env, items);
         env.objc.borrow_mut::<UINavigationBarHostObject>(this).items = items;
     }
-    
+
     this
 }
 
@@ -143,28 +143,28 @@ pub const CLASSES: ClassExports = objc_classes! {
         retain(env, title);
         env.objc.borrow_mut::<UINavigationItemHostObject>(this).title = title;
     }
-    
+
     let title_view_key = get_static_str(env, "UITitleView");
     let title_view: id = msg![env; coder decodeObjectForKey:title_view_key];
     if title_view != nil {
         retain(env, title_view);
         env.objc.borrow_mut::<UINavigationItemHostObject>(this).title_view = title_view;
     }
-    
+
     let left_button_key = get_static_str(env, "UILeftBarButtonItem");
     let left_button: id = msg![env; coder decodeObjectForKey:left_button_key];
     if left_button != nil {
         retain(env, left_button);
         env.objc.borrow_mut::<UINavigationItemHostObject>(this).left_button_item = left_button;
     }
-    
+
     let right_button_key = get_static_str(env, "UIRightBarButtonItem");
     let right_button: id = msg![env; coder decodeObjectForKey:right_button_key];
     if right_button != nil {
         retain(env, right_button);
         env.objc.borrow_mut::<UINavigationItemHostObject>(this).right_button_item = right_button;
     }
-    
+
     this
 }
 

@@ -6,7 +6,9 @@
 //! `CALayer`.
 
 use crate::dyld::{ConstantExports, HostConstant};
-use crate::frameworks::core_graphics::cg_affine_transform::{CGAffineTransform, CGAffineTransformIdentity};
+use crate::frameworks::core_graphics::cg_affine_transform::{
+    CGAffineTransform, CGAffineTransformIdentity,
+};
 use crate::frameworks::core_graphics::cg_bitmap_context::{
     CGBitmapContextCreate, CGBitmapContextGetHeight, CGBitmapContextGetWidth,
 };

@@ -71,28 +71,28 @@ pub const CLASSES: ClassExports = objc_classes! {
 // NSCoding implementation
 - (id)initWithCoder:(id)coder {
     let this: id = msg_super![env; this initWithCoder:coder];
-    
+
     // Decode bar style
     let bar_style_key = get_static_str(env, "UIBarStyle");
     if msg![env; coder containsValueForKey:bar_style_key] {
         let bar_style: UIBarStyle = msg![env; coder decodeIntForKey:bar_style_key];
         () = msg![env; this setBarStyle:bar_style];
     }
-    
+
     // Decode tint color
     let tint_color_key = get_static_str(env, "UITintColor");
     let tint_color: id = msg![env; coder decodeObjectForKey:tint_color_key];
     if tint_color != nil {
         () = msg![env; this setTintColor:tint_color];
     }
-    
+
     // Decode items
     let items_key = get_static_str(env, "UIItems");
     let items: id = msg![env; coder decodeObjectForKey:items_key];
     if items != nil {
         () = msg![env; this setItems:items];
     }
-    
+
     this
 }
 
@@ -176,20 +176,20 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (id)initWithCoder:(id)coder {
     let title_key = get_static_str(env, "UITitle");
     let title: id = msg![env; coder decodeObjectForKey:title_key];
-    
+
     let image_key = get_static_str(env, "UIImage");
     let image: id = msg![env; coder decodeObjectForKey:image_key];
-    
+
     if title != nil {
         retain(env, title);
         env.objc.borrow_mut::<UIBarButtonItemHostObject>(this).title = title;
     }
-    
+
     if image != nil {
         retain(env, image);
         env.objc.borrow_mut::<UIBarButtonItemHostObject>(this).image = image;
     }
-    
+
     // Target and action are typically connected via UIRuntimeEventConnection
     this
 }

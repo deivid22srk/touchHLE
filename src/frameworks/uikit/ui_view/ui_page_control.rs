@@ -50,42 +50,42 @@ pub const CLASSES: ClassExports = objc_classes! {
 // NSCoding implementation
 - (id)initWithCoder:(id)coder {
     let this: id = msg_super![env; this initWithCoder:coder];
-    
+
     // Decode number of pages
     let num_pages_key = get_static_str(env, "UINumberOfPages");
     if msg![env; coder containsValueForKey:num_pages_key] {
         let num_pages: NSInteger = msg![env; coder decodeIntForKey:num_pages_key];
         () = msg![env; this setNumberOfPages:num_pages];
     }
-    
+
     // Decode current page
     let current_page_key = get_static_str(env, "UICurrentPage");
     if msg![env; coder containsValueForKey:current_page_key] {
         let current_page: NSInteger = msg![env; coder decodeIntForKey:current_page_key];
         () = msg![env; this setCurrentPage:current_page];
     }
-    
+
     // Decode hides for single page
     let hides_key = get_static_str(env, "UIHidesForSinglePage");
     if msg![env; coder containsValueForKey:hides_key] {
         let hides: bool = msg![env; coder decodeBoolForKey:hides_key];
         () = msg![env; this setHidesForSinglePage:hides];
     }
-    
+
     // Decode page indicator tint color
     let page_indicator_tint_key = get_static_str(env, "UIPageIndicatorTintColor");
     let page_indicator_tint: id = msg![env; coder decodeObjectForKey:page_indicator_tint_key];
     if page_indicator_tint != nil {
         () = msg![env; this setPageIndicatorTintColor:page_indicator_tint];
     }
-    
+
     // Decode current page indicator tint color
     let current_page_tint_key = get_static_str(env, "UICurrentPageIndicatorTintColor");
     let current_page_tint: id = msg![env; coder decodeObjectForKey:current_page_tint_key];
     if current_page_tint != nil {
         () = msg![env; this setCurrentPageIndicatorTintColor:current_page_tint];
     }
-    
+
     this
 }
 

@@ -107,24 +107,24 @@ fn fstat_inner(env: &mut Environment, fd: FileDescriptor, buf: MutPtr<stat>) -> 
     match file.file {
         GuestFile::File(_) | GuestFile::IpaBundleFile(_) | GuestFile::ResourceFile(_) => {
             stat_data.st_mode |= S_IFREG;
-            
+
             // File permissions: 0644 (rw-r--r--)
             stat_data.st_mode |= 0o644;
-            
+
             // File size
             stat_data.st_size = file.file.stream_len().unwrap().try_into().unwrap();
-            
+
             // Block info
             stat_data.st_blksize = 4096;
             stat_data.st_blocks = ((stat_data.st_size + 511) / 512) as u64;
         }
         GuestFile::Directory => {
             stat_data.st_mode |= S_IFDIR;
-            
+
             // Directory permissions: 0755 (rwxr-xr-x)
             stat_data.st_mode |= 0o755;
-            
-            stat_data.st_size = 0;  // Directories have size 0 on most systems
+
+            stat_data.st_size = 0; // Directories have size 0 on most systems
             stat_data.st_blksize = 4096;
             stat_data.st_blocks = 0;
         }
@@ -134,14 +134,14 @@ fn fstat_inner(env: &mut Environment, fd: FileDescriptor, buf: MutPtr<stat>) -> 
             return -1;
         }
     }
-    
+
     // Timestamps - use current time as placeholder
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap();
     let now_secs = now.as_secs() as i32;
     let now_nsecs = now.subsec_nanos() as i32;
-    
+
     stat_data.st_atimespec = timespec::new(now_secs, now_nsecs);
     stat_data.st_mtimespec = timespec::new(now_secs, now_nsecs);
     stat_data.st_ctimespec = timespec::new(now_secs, now_nsecs);
@@ -165,7 +165,7 @@ fn stat(env: &mut Environment, path: ConstPtr<u8>, buf: MutPtr<stat>) -> i32 {
 
     fn do_stat(env: &mut Environment, path: ConstPtr<u8>, buf: MutPtr<stat>) -> i32 {
         use crate::libc::errno::EINVAL;
-        
+
         if path.is_null() {
             set_errno(env, EINVAL);
             return -1;

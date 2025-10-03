@@ -35,7 +35,8 @@ fn CFSocketCreate(
 }
 
 // CFStream property keys
-pub const kCFStreamPropertyShouldCloseNativeSocket: &str = "kCFStreamPropertyShouldCloseNativeSocket";
+pub const kCFStreamPropertyShouldCloseNativeSocket: &str =
+    "kCFStreamPropertyShouldCloseNativeSocket";
 pub const kCFStreamPropertySocketNativeHandle: &str = "kCFStreamPropertySocketNativeHandle";
 
 pub const CONSTANTS: ConstantExports = &[

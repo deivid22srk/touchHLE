@@ -34,30 +34,31 @@ fn __cxa_atexit(
     d: MutVoidPtr,
 ) -> i32 {
     log_dbg!("__cxa_atexit({:?}, {:?}, {:?})", func, p, d);
-    
+
     // Store destructor for later execution
     let dso_handle = d.to_bits();
     let state = State::get(env);
-    
-    state.dso_destructors
+
+    state
+        .dso_destructors
         .entry(dso_handle)
         .or_default()
         .push((func, p));
-    
+
     0 // success
 }
 
 fn __cxa_finalize(env: &mut Environment, d: MutVoidPtr) {
     log_dbg!("__cxa_finalize({:?})", d);
-    
+
     let state = State::get(env);
     let dso_handle = d.to_bits();
-    
+
     // Run destructors for this DSO in reverse order (LIFO)
     if let Some(destructors) = state.dso_destructors.remove(&dso_handle) {
         for (func, arg) in destructors.into_iter().rev() {
             log_dbg!("  Calling destructor {:?}({:?})", func, arg);
-            
+
             // Call the destructor function
             // Note: We ignore errors here as we're in cleanup code
             let _: () = func.call_from_host(env, (arg,));

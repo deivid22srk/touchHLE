@@ -53,14 +53,14 @@ pub const CLASSES: ClassExports = objc_classes! {
 // NSCoding implementation
 - (id)initWithCoder:(id)coder {
     let this: id = msg_super![env; this initWithCoder:coder];
-    
+
     // Decode UIImage property
     let image_key = get_static_str(env, "UIImage");
     let image: id = msg![env; coder decodeObjectForKey:image_key];
     if image != nil {
         () = msg![env; this setImage:image];
     }
-    
+
     // Decode UIHighlightedImage property (for buttons/interactive images)
     let highlighted_image_key = get_static_str(env, "UIHighlightedImage");
     let highlighted_image: id = msg![env; coder decodeObjectForKey:highlighted_image_key];
@@ -68,7 +68,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         log_dbg!("UIImageView initWithCoder: highlighted image present but not fully supported");
         // TODO: Store highlighted image if needed
     }
-    
+
     this
 }
 

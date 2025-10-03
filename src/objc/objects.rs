@@ -256,8 +256,7 @@ impl super::ObjC {
                 std::any::type_name::<T>()
             );
         }
-        let mut host_object: &(dyn AnyHostObject + 'static) =
-            &*entry.unwrap().host_object;
+        let mut host_object: &(dyn AnyHostObject + 'static) = &*entry.unwrap().host_object;
         loop {
             if let Some(res) = host_object.as_any().downcast_ref() {
                 return res;

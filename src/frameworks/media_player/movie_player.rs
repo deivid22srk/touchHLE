@@ -211,13 +211,13 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())stop {
     log_dbg!("[(MPMoviePlayerController*){:?} stop]", this);
     assert!(this == env.framework_state.media_player.movie_player.active_player.take().unwrap());
-    
+
     // Update playback state
     env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).playback_state = MPMoviePlaybackStateStopped;
     State::get(env).pending_notifications.push_back(
         (MPMoviePlayerPlaybackStateDidChangeNotification, this)
     );
-    
+
     release(env, this);
 }
 

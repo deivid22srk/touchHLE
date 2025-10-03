@@ -75,23 +75,23 @@ fn replace_case_insensitive(
     if target.is_empty() {
         return text.to_string();
     }
-    
+
     let text_lower = text.to_lowercase();
     let target_lower = target.to_lowercase();
-    
+
     let mut result = String::new();
     let mut remaining = text;
     let mut remaining_lower = text_lower.as_str();
-    
+
     if options & NSBackwardsSearch != 0 {
         // Backwards: start from end
         while let Some(pos) = remaining_lower.rfind(&target_lower) {
             let (before, rest) = remaining.split_at(pos);
             let (_matched, after) = rest.split_at(target.len());
-            
+
             result.insert_str(0, after);
             result.insert_str(0, replacement);
-            
+
             remaining = before;
             remaining_lower = &text_lower[..pos];
         }
@@ -101,10 +101,10 @@ fn replace_case_insensitive(
         while let Some(pos) = remaining_lower.find(&target_lower) {
             let (before, rest) = remaining.split_at(pos);
             let (_, after) = rest.split_at(target.len());
-            
+
             result.push_str(before);
             result.push_str(replacement);
-            
+
             remaining = after;
             // Update remaining_lower to match the new remaining
             let start_idx = text.len() - remaining.len();
@@ -112,7 +112,7 @@ fn replace_case_insensitive(
         }
         result.push_str(remaining);
     }
-    
+
     result
 }
 
@@ -121,17 +121,17 @@ fn replace_backwards(text: &str, target: &str, replacement: &str) -> String {
     if target.is_empty() {
         return text.to_string();
     }
-    
+
     let mut result = String::new();
     let mut remaining = text;
-    
+
     while let Some(pos) = remaining.rfind(target) {
         let (before, rest) = remaining.split_at(pos);
         let (_, after) = rest.split_at(target.len());
-        
+
         result.insert_str(0, after);
         result.insert_str(0, replacement);
-        
+
         remaining = before;
     }
     result.insert_str(0, remaining);
@@ -946,35 +946,35 @@ pub const CLASSES: ClassExports = objc_classes! {
                                    options:(NSStringCompareOptions)options
                                      range:(NSRange)range {
     // TODO: support foreign subclasses
-    
+
     // Validate parameters
     if target == nil || replacement == nil {
         log!("Warning: stringByReplacingOccurrences called with nil parameter");
         return retain(env, this);
     }
-    
+
     // Get string content
     let main_string = to_rust_string(env, this);
     let target_str = to_rust_string(env, target);
     let replacement_str = to_rust_string(env, replacement);
-    
+
     // Validate range
     let str_len = main_string.chars().count();
-    if range.location as usize > str_len || 
+    if range.location as usize > str_len ||
        (range.location + range.length) as usize > str_len {
         log!("Warning: stringByReplacingOccurrences called with invalid range");
         return retain(env, this);
     }
-    
+
     // Extract the portion to search
     let chars: Vec<char> = main_string.chars().collect();
     let start = range.location as usize;
     let end = (range.location + range.length) as usize;
-    
+
     let before: String = chars[..start].iter().collect();
     let search_portion: String = chars[start..end].iter().collect();
     let after: String = chars[end..].iter().collect();
-    
+
     // Perform replacement based on options
     let result_portion = if options & NSCaseInsensitiveSearch != 0 {
         // Case-insensitive search
@@ -990,15 +990,15 @@ pub const CLASSES: ClassExports = objc_classes! {
         // Default: literal forward search
         search_portion.replace(target_str.as_ref(), replacement_str.as_ref())
     };
-    
+
     // Reconstruct string
     let final_string = format!("{}{}{}", before, result_portion, after);
-    
+
     log_dbg!(
         "stringByReplacingOccurrences: '{}' -> '{}' (target: '{}', replacement: '{}', options: {:#x}, range: {:?})",
         main_string, final_string, target_str, replacement_str, options, range
     );
-    
+
     from_rust_string(env, final_string)
 }
 
@@ -1769,16 +1769,22 @@ pub fn get_static_str(env: &mut Environment, from: &'static str) -> id {
 pub fn from_rust_string(env: &mut Environment, from: String) -> id {
     let string: id = msg_class![env; _touchHLE_NSString alloc];
     if string == nil {
-        log!("Critical: Failed to allocate NSString for string: {:?}", from);
+        log!(
+            "Critical: Failed to allocate NSString for string: {:?}",
+            from
+        );
         return nil;
     }
-    
+
     // Verify host_object exists before borrowing
     if env.objc.get_host_object(string).is_none() {
-        log!("Critical: Allocated NSString {:?} has no host_object! String content: {:?}", 
-             string, from);
+        log!(
+            "Critical: Allocated NSString {:?} has no host_object! String content: {:?}",
+            string,
+            from
+        );
     }
-    
+
     let host_object: &mut StringHostObject = env.objc.borrow_mut(string);
     *host_object = StringHostObject::Utf8(Cow::Owned(from));
     string
@@ -1804,7 +1810,7 @@ pub fn to_rust_string(env: &mut Environment, string: id) -> Cow<'static, str> {
         log!("Warning: Attempting to convert NSString {:?} to Rust string, but object has no host_object. Returning empty string.", string);
         return Cow::Borrowed("");
     }
-    
+
     // TODO: handle foreign subclasses of NSString
     env.objc
         .borrow_mut::<StringHostObject>(string)
