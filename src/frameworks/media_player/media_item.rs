@@ -31,7 +31,9 @@ pub const MPMediaItemPropertyReleaseDate: &str = "releaseDate";
 pub const MPMediaItemPropertyBeatsPerMinute: &str = "beatsPerMinute";
 pub const MPMediaItemPropertyComments: &str = "comments";
 pub const MPMediaItemPropertyAssetURL: &str = "assetURL";
+#[allow(dead_code)]
 pub const MPMediaItemPropertyIsCloudItem: &str = "isCloudItem";
+#[allow(dead_code)]
 pub const MPMediaItemPropertyPodcastTitle: &str = "podcastTitle";
 #[allow(dead_code)]
 pub const MPMediaItemPropertyPlayCount: &str = "playCount";
