@@ -1768,6 +1768,17 @@ pub fn get_static_str(env: &mut Environment, from: &'static str) -> id {
 /// `[[NSString alloc] initWithUTF8String:]` in the proper API.
 pub fn from_rust_string(env: &mut Environment, from: String) -> id {
     let string: id = msg_class![env; _touchHLE_NSString alloc];
+    if string == nil {
+        log!("Critical: Failed to allocate NSString for string: {:?}", from);
+        return nil;
+    }
+    
+    // Verify host_object exists before borrowing
+    if env.objc.get_host_object(string).is_none() {
+        log!("Critical: Allocated NSString {:?} has no host_object! String content: {:?}", string, from);
+        // Try to continue anyway - the borrow_mut will panic with better error message
+    }
+    
     let host_object: &mut StringHostObject = env.objc.borrow_mut(string);
     *host_object = StringHostObject::Utf8(Cow::Owned(from));
     string
@@ -1788,6 +1799,12 @@ pub fn from_u16_vec(env: &mut Environment, from: Vec<u16>) -> id {
 ///
 /// TODO: Try to avoid converting from UTF-16 in more cases.
 pub fn to_rust_string(env: &mut Environment, string: id) -> Cow<'static, str> {
+    // Verify the object exists before trying to borrow it
+    if env.objc.get_host_object(string).is_none() {
+        log!("Warning: Attempting to convert NSString {:?} to Rust string, but object has no host_object. Returning empty string.", string);
+        return Cow::Borrowed("");
+    }
+    
     // TODO: handle foreign subclasses of NSString
     env.objc
         .borrow_mut::<StringHostObject>(string)

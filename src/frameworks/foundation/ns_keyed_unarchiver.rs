@@ -560,7 +560,13 @@ fn unarchive_value_owned(env: &mut Environment, unarchiver: id, value: &Value) -
     }
 
     match value {
-        Value::String(s) => from_rust_string(env, s.clone()),
+        Value::String(s) => {
+            let string_obj = from_rust_string(env, s.clone());
+            if string_obj == nil {
+                log!("Warning: Failed to create NSString during unarchive_value_owned for string: {:?}", s);
+            }
+            string_obj
+        }
         Value::Integer(int) => {
             #[allow(clippy::clone_on_copy)]
             let int = int.clone();
@@ -606,6 +612,10 @@ fn unarchive_value_owned(env: &mut Environment, unarchiver: id, value: &Value) -
             let mut pairs = Vec::with_capacity(dict.len());
             for (key, val) in dict.iter() {
                 let key_obj = from_rust_string(env, key.clone());
+                if key_obj == nil {
+                    log!("Warning: Failed to create key NSString for dictionary key: {:?}", key);
+                    continue; // Skip this pair
+                }
                 let value_obj = unarchive_value_owned(env, unarchiver, val);
                 pairs.push((key_obj, value_obj));
             }
@@ -666,11 +676,15 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
                 let class_name = class_dict["$classname"].as_string().unwrap();
 
                 class = {
-                    // get_known_class needs &mut ObjC, so we can't call it
+                    // link_class needs &mut ObjC, so we can't call it
                     // while holding a reference to the class name, since it
                     // is ultimately owned by ObjC via the host object
                     let class_name = class_name.to_string();
-                    env.objc.get_known_class(&class_name, &mut env.mem)
+                    
+                    // Use link_class instead of get_known_class to allow placeholders
+                    // for unimplemented classes from NIBArchive files
+                    log_dbg!("NSKeyedUnarchiver: Unarchiving object of class '{}'", class_name);
+                    env.objc.link_class(&class_name, /* is_metaclass: */ false, &mut env.mem)
                 };
                 let host_obj = borrow_host_obj(env, unarchiver); // reborrow
 
@@ -682,7 +696,22 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
             host_obj.current_key = Some(key);
 
             let new_object: id = msg![env; class alloc];
+            if new_object == nil {
+                log!("Warning: Failed to allocate object of class during unarchiving at key {:?}", key);
+                let host_obj = borrow_host_obj(env, unarchiver); // reborrow
+                host_obj.current_key = old_current_key;
+                return nil;
+            }
+            
+            // Verify the object has a host_object after allocation
+            if env.objc.get_host_object(new_object).is_none() {
+                log!("Warning: Allocated object {:?} has no host_object during unarchiving. This may cause crashes.", new_object);
+            }
+            
             let new_object: id = msg![env; new_object initWithCoder:unarchiver];
+            if new_object == nil {
+                log!("Warning: initWithCoder returned nil during unarchiving at key {:?}", key);
+            }
 
             let host_obj = borrow_host_obj(env, unarchiver); // reborrow
             host_obj.current_key = old_current_key;
@@ -713,7 +742,14 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
     };
 
     let host_obj = borrow_host_obj(env, unarchiver); // reborrow
-    host_obj.already_unarchived[key.get() as usize] = Some(new_object);
+    
+    // Only cache the object if it's not nil
+    if new_object != nil {
+        host_obj.already_unarchived[key.get() as usize] = Some(new_object);
+    } else {
+        log_dbg!("Warning: Unarchived object at key {:?} is nil, not caching", key);
+    }
+    
     new_object
 }
 
