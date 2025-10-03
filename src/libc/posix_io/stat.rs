@@ -95,14 +95,14 @@ fn fstat_inner(env: &mut Environment, fd: FileDescriptor, buf: MutPtr<stat>) -> 
         return -1;
     };
 
-    let mut stat_data = stat::default();
-    
-    // Fill basic fields
-    stat_data.st_dev = 1;  // Fake device ID
-    stat_data.st_ino = fd as u64;  // Use FD as inode (hack)
-    stat_data.st_nlink = 1;  // Always 1 link
-    stat_data.st_uid = 501;  // Fake user ID (mobile user on iOS)
-    stat_data.st_gid = 501;  // Fake group ID
+    let mut stat_data = stat {
+        st_dev: 1,
+        st_ino: fd as u64,
+        st_nlink: 1,
+        st_uid: 501,
+        st_gid: 501,
+        ..Default::default()
+    };
 
     match file.file {
         GuestFile::File(_) | GuestFile::IpaBundleFile(_) | GuestFile::ResourceFile(_) => {

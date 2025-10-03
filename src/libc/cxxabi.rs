@@ -41,7 +41,7 @@ fn __cxa_atexit(
     
     state.dso_destructors
         .entry(dso_handle)
-        .or_insert_with(Vec::new)
+        .or_default()
         .push((func, p));
     
     0 // success

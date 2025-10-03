@@ -33,10 +33,15 @@ pub const MPMediaItemPropertyComments: &str = "comments";
 pub const MPMediaItemPropertyAssetURL: &str = "assetURL";
 pub const MPMediaItemPropertyIsCloudItem: &str = "isCloudItem";
 pub const MPMediaItemPropertyPodcastTitle: &str = "podcastTitle";
+#[allow(dead_code)]
 pub const MPMediaItemPropertyPlayCount: &str = "playCount";
+#[allow(dead_code)]
 pub const MPMediaItemPropertySkipCount: &str = "skipCount";
+#[allow(dead_code)]
 pub const MPMediaItemPropertyRating: &str = "rating";
+#[allow(dead_code)]
 pub const MPMediaItemPropertyLastPlayedDate: &str = "lastPlayedDate";
+#[allow(dead_code)]
 pub const MPMediaItemPropertyUserGrouping: &str = "userGrouping";
 
 /// Export these constants for dyld

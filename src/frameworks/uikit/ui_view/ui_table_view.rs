@@ -56,8 +56,11 @@ pub struct UITableViewHostObject {
     style: UITableViewStyle,
     separator_style: UITableViewCellSeparatorStyle,
     row_height: f32,
+    #[allow(dead_code)]
     section_header_height: f32,
+    #[allow(dead_code)]
     section_footer_height: f32,
+    #[allow(dead_code)]
     allows_selection: bool,
 }
 impl_HostObject_with_superclass!(UITableViewHostObject);
@@ -87,6 +90,7 @@ pub struct UITableViewCellHostObject {
     accessory_type: UITableViewCellAccessoryType,
     style: UITableViewCellStyle,
     reuse_identifier: id,
+    #[allow(dead_code)]
     selection_style: NSInteger,
 }
 impl_HostObject_with_superclass!(UITableViewCellHostObject);
