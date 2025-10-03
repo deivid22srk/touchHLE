@@ -49,7 +49,24 @@ pub const CLASSES: ClassExports = objc_classes! {
     msg_super![env; this dealloc]
 }
 
-// TODO: initWithCoder:
+- (id)initWithCoder:(id)coder {
+    let this: id = msg_super![env; this initWithCoder:coder];
+    if this == nil {
+        return nil;
+    }
+    
+    // Decode image
+    let image_key = crate::frameworks::foundation::ns_string::get_static_str(env, "UIImage");
+    let image: id = msg![env; coder decodeObjectForKey:image_key];
+    if image != nil {
+        () = msg![env; this setImage:image];
+    }
+    
+    // Not sure if UIImageView does this unconditionally
+    () = msg![env; this setOpaque:false];
+    
+    this
+}
 
 - (id)initWithImage:(id)image { // UIImage*
     let size: CGSize = msg![env; image size];

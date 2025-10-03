@@ -11,6 +11,7 @@
 pub mod ui_button;
 pub mod ui_segmented_control;
 pub mod ui_slider;
+pub mod ui_stepper;
 pub mod ui_switch;
 pub mod ui_text_field;
 
