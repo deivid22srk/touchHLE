@@ -444,24 +444,9 @@ pub const CLASSES: ClassExports = objc_classes! {
             present_renderbuffer(gles, env.window.as_mut().unwrap());
         }
     } else {
-        if fullscreen_layer != nil {
-            log!(
-                "Layer {:?} is not the fullscreen layer {:?}, skipping presentation of renderbuffer {:?}!",
-                drawable,
-                fullscreen_layer,
-                renderbuffer,
-            );
-            if let Some(sleep_for) = sleep_for {
-                env.sleep(sleep_for, /* tail_call: */ false);
-            }
-            return true;
-        }
-
-        log_dbg!(
-            "There is no fullscreen layer, presenting renderbuffer {:?} to layer {:?} by copying to RAM (slow path).",
-            renderbuffer,
-            drawable,
-        );
+        // Present even if it's not the fullscreen layer by copying pixels.
+        // Some apps render to non-fullscreen CAEAGLLayer; skipping would cause
+        // a black screen. Use slow path copy-to-RAM to ensure visibility.
         let pixels_vec = get_pixels_vec_for_presenting(env, drawable);
         let gles = super::sync_context(&mut env.framework_state.opengles, &mut env.objc, env.window.as_mut().unwrap(), env.current_thread);
         let (pixels_vec, width, height) = unsafe { read_renderbuffer(gles, pixels_vec) };
