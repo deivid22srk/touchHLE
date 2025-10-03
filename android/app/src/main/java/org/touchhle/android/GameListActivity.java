@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
@@ -54,6 +55,7 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
 
     private Uri folderUri;
     private ExecutorService executorService;
+    private ExecutorService metadataExecutor;
     private Bitmap defaultGameIcon;
 
     @Override
@@ -93,6 +95,7 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
         toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
 
         executorService = Executors.newCachedThreadPool();
+        metadataExecutor = Executors.newFixedThreadPool(2);
     }
 
     private void setupRecyclerView() {
@@ -166,9 +169,10 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
                 }
                 String lowerName = fileName.toLowerCase(Locale.ROOT);
                 if (lowerName.endsWith(".ipa") || lowerName.endsWith(".app")) {
-                    GameInfo info = createGameInfo(file);
+                    GameInfo info = createGameInfoBasic(file);
                     if (info != null) {
                         games.add(info);
+                        loadMetadataAsync(file, info);
                     }
                 }
             }
@@ -250,6 +254,86 @@ public class GameListActivity extends AppCompatActivity implements GameAdapter.O
             if (tempCopy != null) {
                 GameFileResolver.deleteRecursively(tempCopy);
             }
+        }
+    }
+
+    private GameInfo createGameInfoBasic(DocumentFile file) {
+        String fileName = file.getName();
+        if (fileName == null) {
+            return null;
+        }
+        String baseName = fileName;
+        int extensionIndex = baseName.lastIndexOf('.');
+        if (extensionIndex > 0) {
+            baseName = baseName.substring(0, extensionIndex);
+        }
+        GameInfo.Type type = fileName.toLowerCase(Locale.ROOT).endsWith(".ipa")
+                ? GameInfo.Type.IPA
+                : GameInfo.Type.APP;
+        long sizeBytes = file.length();
+        String sizeString = formatFileSize(sizeBytes);
+        GameInfo info = new GameInfo(baseName, "Unknown Version", sizeString, file.getUri(), type);
+        info.setIcon(defaultGameIcon);
+        return info;
+    }
+
+    private void loadMetadataAsync(DocumentFile file, GameInfo info) {
+        metadataExecutor.execute(() -> {
+            NativeMetadata metadata = fetchMetadataFast(file);
+            if (metadata != null) {
+                runOnUiThread(() -> {
+                    if (metadata.displayName != null && !metadata.displayName.isEmpty()) {
+                        info.setName(metadata.displayName);
+                    }
+                    if (metadata.version != null && !metadata.version.isEmpty()) {
+                        info.setVersion(metadata.version);
+                    }
+                    if (metadata.iconBitmap != null) {
+                        info.setIcon(metadata.iconBitmap);
+                    }
+                    info.setBundleIdentifier(metadata.bundleIdentifier);
+                    gameAdapter.notifyDataSetChanged();
+                    updateUI();
+                });
+            }
+        });
+    }
+
+    private NativeMetadata fetchMetadataFast(DocumentFile file) {
+        try {
+            String name = file.getName();
+            if (name != null && !file.isDirectory() && name.toLowerCase(Locale.ROOT).endsWith(".ipa")) {
+                try (ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(file.getUri(), "r")) {
+                    if (pfd == null) {
+                        return null;
+                    }
+                    String fdPath = "/proc/self/fd/" + pfd.getFd();
+                    String json = TouchHLENative.inspectBundle(fdPath);
+                    if (json == null || json.isEmpty()) {
+                        return null;
+                    }
+                    JSONObject object = new JSONObject(json);
+                    NativeMetadata metadata = new NativeMetadata();
+                    metadata.displayName = object.optString("display_name", null);
+                    metadata.version = object.optString("version", null);
+                    metadata.bundleIdentifier = object.optString("bundle_identifier", null);
+                    String iconBase64 = object.optString("icon_png", null);
+                    if (iconBase64 != null && !iconBase64.isEmpty()) {
+                        try {
+                            byte[] iconBytes = Base64.decode(iconBase64, Base64.DEFAULT);
+                            metadata.iconBitmap = BitmapFactory.decodeByteArray(iconBytes, 0, iconBytes.length);
+                        } catch (IllegalArgumentException decodeError) {
+                            Log.w(TAG, "Failed to decode icon for " + file.getName(), decodeError);
+                        }
+                    }
+                    return metadata;
+                }
+            } else {
+                return fetchMetadata(file);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Metadata fast path failed for " + file.getName(), e);
+            return null;
         }
     }
 
