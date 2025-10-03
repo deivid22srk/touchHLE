@@ -70,12 +70,15 @@ pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_4_2: f64 = 550.52;
 pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_4_3: f64 = 550.52;
 
 /// Export version number (we'll report iOS 4.0)
-pub const CONSTANTS: ConstantExports = &[
-    (
-        "_kCFCoreFoundationVersionNumber",
-        HostConstant::Double(K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_4_0),
-    ),
-];
+pub const CONSTANTS: ConstantExports = &[(
+    "_kCFCoreFoundationVersionNumber",
+    HostConstant::Custom(|env| {
+        env.mem
+            .alloc_and_write(K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_4_0)
+            .cast()
+            .cast_const()
+    }),
+)];
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]

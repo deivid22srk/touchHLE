@@ -116,7 +116,7 @@ fn fstat_inner(env: &mut Environment, fd: FileDescriptor, buf: MutPtr<stat>) -> 
             
             // Block info
             stat_data.st_blksize = 4096;
-            stat_data.st_blocks = (stat_data.st_size + 511) / 512;
+            stat_data.st_blocks = ((stat_data.st_size + 511) / 512) as u64;
         }
         GuestFile::Directory => {
             stat_data.st_mode |= S_IFDIR;
@@ -139,8 +139,8 @@ fn fstat_inner(env: &mut Environment, fd: FileDescriptor, buf: MutPtr<stat>) -> 
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap();
-    let now_secs = now.as_secs() as i64;
-    let now_nsecs = now.subsec_nanos() as i64;
+    let now_secs = now.as_secs() as i32;
+    let now_nsecs = now.subsec_nanos() as i32;
     
     stat_data.st_atimespec = timespec {
         tv_sec: now_secs,

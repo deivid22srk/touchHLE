@@ -6,7 +6,7 @@
 //! `MPMediaItem` and related classes.
 
 use crate::dyld::{ConstantExports, HostConstant};
-use crate::objc::{id, nil, objc_classes, ClassExports, HostObject};
+use crate::objc::{id, msg_super, nil, objc_classes, ClassExports, HostObject};
 use std::collections::HashMap;
 
 // MPMediaItem property keys (NSString constants)

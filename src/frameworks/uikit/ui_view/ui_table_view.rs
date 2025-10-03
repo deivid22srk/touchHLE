@@ -9,8 +9,8 @@ use super::ui_scroll_view::UIScrollViewHostObject;
 use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
 use crate::frameworks::foundation::NSInteger;
 use crate::objc::{
-    id, impl_HostObject_with_superclass, msg, msg_class, nil, objc_classes, ClassExports,
-    NSZonePtr,
+    id, impl_HostObject_with_superclass, msg, msg_class, msg_super, nil, objc_classes,
+    ClassExports, NSZonePtr,
 };
 
 // UITableViewStyle

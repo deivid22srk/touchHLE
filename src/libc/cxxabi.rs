@@ -8,7 +8,7 @@
 //! Resources:
 //! - [Itanium C++ ABI specification](https://itanium-cxx-abi.github.io/cxx-abi/abi.html#dso-dtor-runtime-api)
 
-use crate::abi::GuestFunction;
+use crate::abi::{CallFromHost, GuestFunction};
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::mem::MutVoidPtr;
 use crate::Environment;
@@ -60,7 +60,7 @@ fn __cxa_finalize(env: &mut Environment, d: MutVoidPtr) {
             
             // Call the destructor function
             // Note: We ignore errors here as we're in cleanup code
-            let _ = func.call_from_host(env, &[arg.to_bits()]);
+            let _: () = func.call_from_host(env, (arg,));
         }
     }
 }

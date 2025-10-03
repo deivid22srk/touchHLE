@@ -87,7 +87,7 @@ fn replace_case_insensitive(
         // Backwards: start from end
         while let Some(pos) = remaining_lower.rfind(&target_lower) {
             let (before, rest) = remaining.split_at(pos);
-            let (matched, after) = rest.split_at(target.len());
+            let (_matched, after) = rest.split_at(target.len());
             
             result.insert_str(0, after);
             result.insert_str(0, replacement);
@@ -106,7 +106,9 @@ fn replace_case_insensitive(
             result.push_str(replacement);
             
             remaining = after;
-            remaining_lower = &remaining.to_lowercase();
+            // Update remaining_lower to match the new remaining
+            let start_idx = text.len() - remaining.len();
+            remaining_lower = &text_lower[start_idx..];
         }
         result.push_str(remaining);
     }
@@ -982,7 +984,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         if options & NSBackwardsSearch != 0 {
             replace_backwards(&search_portion, &target_str, &replacement_str)
         } else {
-            search_portion.replace(&target_str, &replacement_str)
+            search_portion.replace(target_str.as_ref(), replacement_str.as_ref())
         }
     } else {
         // Default: literal forward search
