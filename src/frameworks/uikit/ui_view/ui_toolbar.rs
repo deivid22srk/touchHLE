@@ -15,6 +15,7 @@ use crate::objc::{
 
 type UIBarStyle = NSInteger;
 const UIBarStyleDefault: UIBarStyle = 0;
+#[allow(dead_code)]
 const UIBarStyleBlack: UIBarStyle = 1;
 
 #[derive(Default)]

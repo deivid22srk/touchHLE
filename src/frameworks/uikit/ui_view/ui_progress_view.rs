@@ -15,6 +15,7 @@ use crate::objc::{
 
 type UIProgressViewStyle = NSInteger;
 const UIProgressViewStyleDefault: UIProgressViewStyle = 0;
+#[allow(dead_code)]
 const UIProgressViewStyleBar: UIProgressViewStyle = 1;
 
 #[derive(Default)]
@@ -110,7 +111,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())setProgress:(CGFloat)progress {
-    let progress = progress.max(0.0).min(1.0); // Clamp between 0.0 and 1.0
+    let progress = progress.clamp(0.0, 1.0); // Clamp between 0.0 and 1.0
     env.objc.borrow_mut::<UIProgressViewHostObject>(this).progress = progress;
     () = msg![env; this setNeedsDisplay];
 }
