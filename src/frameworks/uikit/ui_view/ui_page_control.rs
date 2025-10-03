@@ -5,7 +5,6 @@
  */
 //! `UIPageControl`.
 
-use crate::frameworks::core_graphics::CGRect;
 use crate::frameworks::foundation::ns_string::get_static_str;
 use crate::frameworks::foundation::NSInteger;
 use crate::objc::{
@@ -13,8 +12,7 @@ use crate::objc::{
     ClassExports, NSZonePtr,
 };
 
-#[derive(Default)]
-struct UIPageControlHostObject {
+pub struct UIPageControlHostObject {
     superclass: super::ui_control::UIControlHostObject,
     number_of_pages: NSInteger,
     current_page: NSInteger,
@@ -25,24 +23,28 @@ struct UIPageControlHostObject {
     current_page_indicator_tint_color: id,
 }
 impl_HostObject_with_superclass!(UIPageControlHostObject);
+impl Default for UIPageControlHostObject {
+    fn default() -> Self {
+        UIPageControlHostObject {
+            superclass: Default::default(),
+            number_of_pages: 0,
+            current_page: 0,
+            hides_for_single_page: false,
+            page_indicator_tint_color: nil,
+            current_page_indicator_tint_color: nil,
+        }
+    }
+}
 
 pub const CLASSES: ClassExports = objc_classes! {
 
 (env, this, _cmd);
 
-@implementation UIPageControl: super::ui_control::UIControl
+@implementation UIPageControl: super::UIControl
 
 + (id)allocWithZone:(NSZonePtr)_zone {
     let host_object = Box::<UIPageControlHostObject>::default();
     env.objc.alloc_object(this, host_object, &mut env.mem)
-}
-
-- (id)initWithFrame:(CGRect)frame {
-    let this: id = msg_super![env; this initWithFrame:frame];
-    env.objc.borrow_mut::<UIPageControlHostObject>(this).number_of_pages = 0;
-    env.objc.borrow_mut::<UIPageControlHostObject>(this).current_page = 0;
-    env.objc.borrow_mut::<UIPageControlHostObject>(this).hides_for_single_page = false;
-    this
 }
 
 // NSCoding implementation

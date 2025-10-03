@@ -48,10 +48,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)initWithProgressViewStyle:(UIProgressViewStyle)style {
-    let this: id = msg_super![env; this initWithFrame:CGRect {
+    let frame = CGRect {
         origin: crate::frameworks::core_graphics::CGPoint { x: 0.0, y: 0.0 },
         size: crate::frameworks::core_graphics::CGSize { width: 0.0, height: 0.0 }
-    }];
+    };
+    let this: id = msg_super![env; this initWithFrame:frame];
     env.objc.borrow_mut::<UIProgressViewHostObject>(this).progress_view_style = style;
     this
 }

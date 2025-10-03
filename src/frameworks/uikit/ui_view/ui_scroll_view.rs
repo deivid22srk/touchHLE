@@ -73,7 +73,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     // Decode scroll enabled
     let scroll_enabled_key = get_static_str(env, "UIScrollDisabled");
     let scroll_disabled: bool = msg![env; coder decodeBoolForKey:scroll_enabled_key];
-    () = msg![env; this setScrollEnabled:!scroll_disabled];
+    let scroll_enabled = !scroll_disabled;
+    () = msg![env; this setScrollEnabled:scroll_enabled];
     
     // Decode bounces property
     let bounces_key = get_static_str(env, "UIBounces");

@@ -28,18 +28,27 @@ struct UIToolbarHostObject {
 }
 impl_HostObject_with_superclass!(UIToolbarHostObject);
 
-#[derive(Default)]
 struct UIBarButtonItemHostObject {
     /// `id` target (weak reference)
     target: id,
     /// `SEL` action
-    action: crate::objc::SEL,
+    action: Option<crate::objc::SEL>,
     /// `NSString*` title
     title: id,
     /// `UIImage*` image
     image: id,
 }
 impl crate::objc::HostObject for UIBarButtonItemHostObject {}
+impl Default for UIBarButtonItemHostObject {
+    fn default() -> Self {
+        UIBarButtonItemHostObject {
+            target: nil,
+            action: None,
+            title: nil,
+            image: nil,
+        }
+    }
+}
 
 pub const CLASSES: ClassExports = objc_classes! {
 
@@ -147,7 +156,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     let host_obj = env.objc.borrow_mut::<UIBarButtonItemHostObject>(this);
     host_obj.title = title;
     host_obj.target = target; // weak reference
-    host_obj.action = action;
+    host_obj.action = Some(action);
     this
 }
 
@@ -159,7 +168,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     let host_obj = env.objc.borrow_mut::<UIBarButtonItemHostObject>(this);
     host_obj.image = image;
     host_obj.target = target; // weak reference
-    host_obj.action = action;
+    host_obj.action = Some(action);
     this
 }
 
