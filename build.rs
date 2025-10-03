@@ -49,6 +49,8 @@ pub fn main() {
         }
         if let Some(license) = dep.license {
             write!(&mut deps_string, ", licensed under {license}").unwrap();
+        } else if dep.name == "fuchsia-cprng" {
+            write!(&mut deps_string, ", licensed under BSD-3-Clause").unwrap();
         } else {
             panic!("Dependency {} has an unspecified license!", dep.name);
         }
