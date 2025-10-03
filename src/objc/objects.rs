@@ -246,15 +246,33 @@ impl super::ObjC {
     /// Get a reference to a host object and downcast it. Panics if there is
     /// no such object, or if downcasting fails.
     pub fn borrow<T: AnyHostObject + 'static>(&self, object: id) -> &T {
+        let entry = self.objects.get(&object);
+        if entry.is_none() {
+            panic!(
+                "No entry found for object {:?} when trying to borrow as type {}. \
+                 The object may have been deallocated prematurely, never allocated, \
+                 or the pointer may be corrupted.",
+                object,
+                std::any::type_name::<T>()
+            );
+        }
         let mut host_object: &(dyn AnyHostObject + 'static) =
-            &*self.objects.get(&object).unwrap().host_object;
+            &*entry.unwrap().host_object;
         loop {
             if let Some(res) = host_object.as_any().downcast_ref() {
                 return res;
             } else if let Some(next) = host_object.as_superclass() {
                 host_object = next;
             } else {
-                panic!();
+                panic!(
+                    "Failed to downcast object {:?} to type {}. \
+                     This usually means the class is missing required host object type or \
+                     has incorrect superclass hierarchy. \
+                     Current host object type: {:?}",
+                    object,
+                    std::any::type_name::<T>(),
+                    host_object.as_any().type_id()
+                );
             }
         }
     }
