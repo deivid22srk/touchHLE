@@ -127,20 +127,10 @@ impl BundleData {
         if path.is_dir() {
             return Self::open_host_dir(path);
         }
-        if path.is_file() {
-            // Prefer extension check for quick path
-            let is_ipa_ext = path
-                .extension()
-                .map(|ext| ext.eq_ignore_ascii_case("ipa"))
-                .unwrap_or(false);
-            if is_ipa_ext {
-                return Self::open_ipa(path);
-            }
-            // Fallback: try opening as IPA even without .ipa extension
-            // (e.g., /proc/self/fd/*)
-            if let Ok(bundle) = Self::open_ipa(path) {
-                return Ok(bundle);
-            }
+        // Try opening as IPA even without an .ipa extension.
+        // Works with /proc/self/fd and SAF-backed FDs on Android.
+        if let Ok(bundle) = Self::open_ipa(path) {
+            return Ok(bundle);
         }
         Err(format!(
             "{} is not a directory or an IPA file",
