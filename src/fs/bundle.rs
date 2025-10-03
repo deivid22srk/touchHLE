@@ -124,21 +124,27 @@ impl BundleData {
     }
 
     pub fn open_any(path: &Path) -> Result<BundleData, String> {
-        if path.is_file()
-            && path
+        if path.is_dir() {
+            return Self::open_host_dir(path);
+        }
+        if path.is_file() {
+            // Prefer extension check for quick path
+            let is_ipa_ext = path
                 .extension()
                 .map(|ext| ext.eq_ignore_ascii_case("ipa"))
-                .unwrap_or(false)
-        {
-            Ok(Self::open_ipa(path)?)
-        } else if path.is_dir() {
-            Ok(Self::open_host_dir(path)?)
-        } else {
-            Err(format!(
-                "{} is not a directory or an IPA file",
-                path.display()
-            ))
+                .unwrap_or(false);
+            if is_ipa_ext {
+                return Self::open_ipa(path);
+            }
+            // Fallback: try opening as IPA even without .ipa extension (e.g., /proc/self/fd/*)
+            if let Ok(bundle) = Self::open_ipa(path) {
+                return Ok(bundle);
+            }
         }
+        Err(format!(
+            "{} is not a directory or an IPA file",
+            path.display()
+        ))
     }
 
     pub(super) fn into_fs_node(self) -> FsNode {
