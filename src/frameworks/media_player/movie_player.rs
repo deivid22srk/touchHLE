@@ -16,10 +16,10 @@ use crate::objc::{
     id, msg, msg_class, nil, objc_classes, release, retain, ClassExports, HostObject, NSZonePtr,
 };
 use crate::Environment;
-use h264_decoder::Decoder;
+use openh264::Decoder;
 use std::collections::VecDeque;
 use std::io::Cursor;
-use symphonia::core::codecs::{Decoder as _, CODEC_TYPE_H264};
+use symphonia::core::codecs::{CodecType, Decoder as _};
 use symphonia::core::errors::Error as SymphoniaError;
 use symphonia::core::formats::{FormatOptions, FormatReader};
 use symphonia::core::io::MediaSourceStream;
@@ -159,7 +159,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
             if let Ok(probed) = symphonia::default::get_probe().format(&Default::default(), mss, &format_opts, &metadata_opts) {
                 host_obj.reader = Some(probed.format);
-                if let Some(track) = host_obj.reader.as_ref().unwrap().tracks().iter().find(|t| t.codec_params.codec == CODEC_TYPE_H264) {
+                if let Some(track) = host_obj.reader.as_ref().unwrap().tracks().iter().find(|t| t.codec_params.codec_type == symphonia::core::codecs::CodecType::Video) {
                     host_obj.video_track_id = Some(track.id);
                     if let Some(params) = &track.codec_params {
                         if let (Some(width), Some(height)) = (params.width, params.height) {

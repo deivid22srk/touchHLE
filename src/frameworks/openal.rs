@@ -38,19 +38,19 @@ impl State {
 }
 
 /// Opaque type in guest memory standing in for [ALCdevice] in host memory.
-struct GuestALCdevice {
+pub struct GuestALCdevice {
     _filler: u8,
 }
 impl SafeWrite for GuestALCdevice {}
 /// Opaque type in guest memory standing in for [ALCcontext] in host memory.
-struct GuestALCcontext {
+pub struct GuestALCcontext {
     _filler: u8,
 }
 impl SafeWrite for GuestALCcontext {}
 
 // === alc.h ===
 
-fn alcOpenDevice(env: &mut Environment, devicename: ConstPtr<u8>) -> MutPtr<GuestALCdevice> {
+pub fn alcOpenDevice(env: &mut Environment, devicename: ConstPtr<u8>) -> MutPtr<GuestALCdevice> {
     if !devicename.is_null() {
         // If device name name is not null, we check if it's the one which was
         // obtained from a call to alcGetString(NULL, ALC_DEVICE_SPECIFIER).
@@ -118,7 +118,7 @@ const ALLOWED_CONTEXT_ATTRIBUTES: [ALCint; 5] = [
     ALC_STEREO_SOURCES,
 ];
 
-fn alcCreateContext(
+pub fn alcCreateContext(
     env: &mut Environment,
     device: MutPtr<GuestALCdevice>,
     attr_list: ConstPtr<i32>,
@@ -169,7 +169,7 @@ fn alcDestroyContext(env: &mut Environment, context: MutPtr<GuestALCcontext>) {
     log_dbg!("alcDestroyContext({:?})", context);
 }
 
-fn alcProcessContext(env: &mut Environment, context: MutPtr<GuestALCcontext>) {
+pub fn alcProcessContext(env: &mut Environment, context: MutPtr<GuestALCcontext>) {
     if context.is_null() {
         log!("alcProcessContext() is called with NULL context, ignoring");
         return;
@@ -177,7 +177,7 @@ fn alcProcessContext(env: &mut Environment, context: MutPtr<GuestALCcontext>) {
     let host_context = State::get(env).contexts.get(&context).copied().unwrap();
     unsafe { al::alcProcessContext(host_context) }
 }
-fn alcSuspendContext(env: &mut Environment, context: MutPtr<GuestALCcontext>) {
+pub fn alcSuspendContext(env: &mut Environment, context: MutPtr<GuestALCcontext>) {
     if context.is_null() {
         log!("alcSuspendContext() is called with NULL context, ignoring");
         return;
@@ -186,7 +186,7 @@ fn alcSuspendContext(env: &mut Environment, context: MutPtr<GuestALCcontext>) {
     unsafe { al::alcSuspendContext(host_context) }
 }
 
-fn alcMakeContextCurrent(env: &mut Environment, context: MutPtr<GuestALCcontext>) -> bool {
+pub fn alcMakeContextCurrent(env: &mut Environment, context: MutPtr<GuestALCcontext>) -> bool {
     let host_context = if context.is_null() {
         std::ptr::null_mut()
     } else {
