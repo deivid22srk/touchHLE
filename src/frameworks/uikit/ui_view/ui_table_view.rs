@@ -240,11 +240,11 @@ pub const CLASSES: ClassExports = objc_classes! {
         {
             let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
             host_obj.style = style;
-            
-            if reuse_identifier != nil {
-                retain(env, reuse_identifier);
-            }
             host_obj.reuse_identifier = reuse_identifier;
+        }
+        
+        if reuse_identifier != nil {
+            retain(env, reuse_identifier);
         }
         
         // Create content view
@@ -315,22 +315,25 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())dealloc {
     use crate::objc::release;
     
-    let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
+    let (text_label, detail_text_label, image_view, content_view, reuse_identifier) = {
+        let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
+        (host_obj.text_label, host_obj.detail_text_label, host_obj.image_view, host_obj.content_view, host_obj.reuse_identifier)
+    };
     
-    if host_obj.text_label != nil {
-        release(env, host_obj.text_label);
+    if text_label != nil {
+        release(env, text_label);
     }
-    if host_obj.detail_text_label != nil {
-        release(env, host_obj.detail_text_label);
+    if detail_text_label != nil {
+        release(env, detail_text_label);
     }
-    if host_obj.image_view != nil {
-        release(env, host_obj.image_view);
+    if image_view != nil {
+        release(env, image_view);
     }
-    if host_obj.content_view != nil {
-        release(env, host_obj.content_view);
+    if content_view != nil {
+        release(env, content_view);
     }
-    if host_obj.reuse_identifier != nil {
-        release(env, host_obj.reuse_identifier);
+    if reuse_identifier != nil {
+        release(env, reuse_identifier);
     }
     
     () = msg_super![env; this dealloc]
