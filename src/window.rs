@@ -214,6 +214,9 @@ pub struct Window {
     virtual_cursor_last: Option<(f32, f32, bool, bool)>,
     virtual_cursor_last_unsticky: Option<(f32, f32, Instant)>,
     virtual_accelerometer_last: Option<(f32, f32, bool)>,
+    /// Tracks whether the rendering surface is valid and ready for rendering.
+    /// On Android, this prevents crashes when the app is paused/backgrounded.
+    surface_valid: bool,
 }
 impl Window {
     /// Returns [true] if touchHLE is running on a device where we should always
@@ -353,6 +356,7 @@ impl Window {
             virtual_cursor_last: None,
             virtual_cursor_last_unsticky: None,
             virtual_accelerometer_last: None,
+            surface_valid: true,
         };
 
         // Set up OpenGL ES context used for splash screen and app UI rendering
@@ -565,6 +569,8 @@ impl Window {
                     log!("Received app-will-resign-active event.");
                     assert!(self.high_priority_event.is_none());
                     self.high_priority_event = Some(Event::AppWillResignActive);
+                    // Mark surface as invalid to prevent EGL_BAD_SURFACE errors on Android
+                    self.surface_valid = false;
                     // For some reason, if we don't pause event polling, we will
                     // never finish handling the event.
                     // TODO: Add a mechanism for re-enabling polling, if at some
@@ -690,6 +696,22 @@ impl Window {
                 E::TextInput { text, .. } => {
                     log_dbg!("SDL TextInput {}", text);
                     Event::TextInput(TextInputEvent::Text(text))
+                }
+                // On Android, when the app returns to foreground, SDL recreates the surface.
+                // We need to mark it as valid again to resume rendering.
+                E::Window { win_event, .. } => {
+                    match win_event {
+                        sdl2::event::WindowEvent::Restored | 
+                        sdl2::event::WindowEvent::Exposed |
+                        sdl2::event::WindowEvent::FocusGained => {
+                            if !self.surface_valid {
+                                log!("Surface restored, resuming rendering.");
+                                self.surface_valid = true;
+                            }
+                        }
+                        _ => {}
+                    }
+                    continue;
                 }
                 _ => continue,
             })
@@ -1106,10 +1128,17 @@ impl Window {
             gl_ctx.DeleteTextures(1, &texture);
         };
 
-        self.window.gl_swap_window();
+        // Use the public swap_window method which checks surface validity
+        self.swap_window();
 
         // hold onto GL context so the image doesn't disappear, and hold
         // onto image so we can rotate later if necessary
+    }
+
+    /// Check if the rendering surface is valid and ready for rendering operations.
+    /// Returns false when the app is paused/backgrounded on Android.
+    pub fn is_surface_valid(&self) -> bool {
+        self.surface_valid
     }
 
     /// Swap front-buffer and back-buffer so the result of OpenGL rendering is
@@ -1118,6 +1147,15 @@ impl Window {
         if let Ok(mut counter) = fps_counter().lock() {
             counter.record_frame();
         }
+        
+        // Check if the surface is valid before attempting swap.
+        // On Android, the surface becomes invalid when the app is paused/backgrounded,
+        // and calling gl_swap_window() on an invalid surface causes EGL_BAD_SURFACE errors.
+        if !self.surface_valid {
+            log_dbg!("Skipping swap_window() - surface is not valid (app backgrounded?)");
+            return;
+        }
+        
         self.window.gl_swap_window();
     }
 

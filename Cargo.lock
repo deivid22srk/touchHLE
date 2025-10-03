@@ -920,6 +920,7 @@ dependencies = [
  "gl_generator",
  "hound",
  "jni",
+ "libc",
  "mach_object",
  "md5",
  "nibarchive",
