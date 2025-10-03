@@ -47,7 +47,7 @@ use crate::mem::SafeRead;
 pub const kCFNotFound: CFIndex = -1;
 
 /// Core Foundation version numbers for different iOS versions
-/// See: https://developer.apple.com/documentation/corefoundation/kcfcorefoundationversionnumber
+/// See: <https://developer.apple.com/documentation/corefoundation/kcfcorefoundationversionnumber>
 #[allow(dead_code)]
 pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_2_0: f64 = 478.23;
 #[allow(dead_code)]
