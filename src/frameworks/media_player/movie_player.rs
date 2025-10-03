@@ -171,7 +171,8 @@ pub const CLASSES: ClassExports = objc_classes! {
                         host_obj.decoder = Some(decoder);
                         host_obj.load_state = MPMovieLoadStatePlayable | MPMovieLoadStatePlaythroughOK;
 
-                        // Act as if loading immediately completed (Spore Origins waits for this).
+                        // Act as if loading immediately completed
+                        // (Spore Origins waits for this).
                         State::get(env).pending_notifications.push_back(
                             (MPMoviePlayerContentPreloadDidFinishNotification, this)
                         );

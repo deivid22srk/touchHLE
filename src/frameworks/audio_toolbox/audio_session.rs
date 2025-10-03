@@ -64,7 +64,8 @@ impl Default for State {
             context: None,
             // This is the default value.
             audio_session_category: kAudioSessionCategory_SoloAmbientSound,
-            // These are placeholder values, will be updated by AudioSessionInitialize
+            // These are placeholder values,
+            // will be updated by AudioSessionInitialize
             current_hardware_sample_rate: 44100.0,
             current_hardware_output_number_channels: 2,
             current_hardware_output_volume: 1.0,
