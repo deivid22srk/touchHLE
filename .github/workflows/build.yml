@@ -1,4 +1,4 @@
-name: Build touchHLE
+name: 3Build touchHLE
 
 on:
   push:
