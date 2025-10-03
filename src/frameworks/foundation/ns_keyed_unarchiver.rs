@@ -683,12 +683,12 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
                     log_dbg!("NSKeyedUnarchiver: Unarchiving object of class '{}'", class_name);
                     env.objc.link_class(&class_name, /* is_metaclass: */ false, &mut env.mem)
                 };
-                let host_obj = borrow_host_obj(env, unarchiver); // reborrow
+                let host_obj = borrow_host_obj(env, unarchiver);
 
                 host_obj.already_unarchived[class_key.get() as usize] = Some(class);
             };
 
-            let host_obj = borrow_host_obj(env, unarchiver); // reborrow
+            let host_obj = borrow_host_obj(env, unarchiver);
             let old_current_key = host_obj.current_key;
             host_obj.current_key = Some(key);
 
@@ -710,7 +710,7 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
                 log!("Warning: initWithCoder returned nil during unarchiving at key {:?}", key);
             }
 
-            let host_obj = borrow_host_obj(env, unarchiver); // reborrow
+            let host_obj = borrow_host_obj(env, unarchiver);
             host_obj.current_key = old_current_key;
 
             new_object
@@ -738,8 +738,7 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
         _ => unimplemented!("Unarchive: {:#?}", item),
     };
 
-    let host_obj = borrow_host_obj(env, unarchiver); // reborrow
-    // Only cache the object if it's not nil
+    let host_obj = borrow_host_obj(env, unarchiver);
     if new_object != nil {
         host_obj.already_unarchived[key.get() as usize] = Some(new_object);
     } else {
