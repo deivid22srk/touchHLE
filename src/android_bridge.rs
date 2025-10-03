@@ -146,7 +146,8 @@ pub extern "C" fn Java_org_touchhle_android_TouchHLENative_inspectBundle(
         Ok(json) => json,
         Err(err) => {
             log!("Failed to inspect bundle {path}: {err}");
-            // Return minimal JSON instead of null to avoid JNI fatal errors on some devices
+            // Return minimal JSON instead of null to avoid JNI
+            // fatal errors on some devices
             String::from("{}")
         }
     };

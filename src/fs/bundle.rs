@@ -136,7 +136,8 @@ impl BundleData {
             if is_ipa_ext {
                 return Self::open_ipa(path);
             }
-            // Fallback: try opening as IPA even without .ipa extension (e.g., /proc/self/fd/*)
+            // Fallback: try opening as IPA even without .ipa extension
+            // (e.g., /proc/self/fd/*)
             if let Ok(bundle) = Self::open_ipa(path) {
                 return Ok(bundle);
             }
