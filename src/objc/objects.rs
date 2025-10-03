@@ -276,7 +276,16 @@ impl super::ObjC {
             } else if let Some(next) = host_object.as_superclass_mut() {
                 host_object = next;
             } else {
-                panic!();
+                let object_class = self.objects.get(&object).unwrap().class;
+                let class_name = self.class_name(object_class);
+                panic!(
+                    "Failed to downcast object {:?} of class '{}' to type {}. \
+                     This usually means the class is missing required host object type or \
+                     has incorrect superclass hierarchy.",
+                    object,
+                    class_name,
+                    std::any::type_name::<T>()
+                );
             }
         }
     }

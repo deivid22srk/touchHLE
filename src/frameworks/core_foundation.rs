@@ -40,10 +40,42 @@ pub type CFOptionFlags = u32;
 pub type CFComparisonResult = CFIndex;
 
 use crate::abi::GuestArg;
+use crate::dyld::{ConstantExports, HostConstant};
 use crate::impl_GuestRet_for_large_struct;
 use crate::mem::SafeRead;
 
 pub const kCFNotFound: CFIndex = -1;
+
+/// Core Foundation version numbers for different iOS versions
+/// See: https://developer.apple.com/documentation/corefoundation/kcfcorefoundationversionnumber
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_2_0: f64 = 478.23;
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_2_1: f64 = 478.26;
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_2_2: f64 = 478.29;
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_3_0: f64 = 478.47;
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_3_1: f64 = 478.52;
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_3_2: f64 = 550.32;
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_4_0: f64 = 550.32;
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_4_1: f64 = 550.38;
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_4_2: f64 = 550.52;
+#[allow(dead_code)]
+pub const K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_4_3: f64 = 550.52;
+
+/// Export version number (we'll report iOS 4.0)
+pub const CONSTANTS: ConstantExports = &[
+    (
+        "_kCFCoreFoundationVersionNumber",
+        HostConstant::Double(K_CF_CORE_FOUNDATION_VERSION_NUMBER_IOS_4_0),
+    ),
+];
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]

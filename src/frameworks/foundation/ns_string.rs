@@ -65,6 +65,77 @@ const C_STRING_FRIENDLY_ENCODINGS: &[NSStringEncoding] = &[
 
 pub const NSMaximumStringLength: NSUInteger = (i32::MAX - 1) as _;
 
+/// Replace all occurrences case-insensitively
+fn replace_case_insensitive(
+    text: &str,
+    target: &str,
+    replacement: &str,
+    options: NSStringCompareOptions,
+) -> String {
+    if target.is_empty() {
+        return text.to_string();
+    }
+    
+    let text_lower = text.to_lowercase();
+    let target_lower = target.to_lowercase();
+    
+    let mut result = String::new();
+    let mut remaining = text;
+    let mut remaining_lower = text_lower.as_str();
+    
+    if options & NSBackwardsSearch != 0 {
+        // Backwards: start from end
+        while let Some(pos) = remaining_lower.rfind(&target_lower) {
+            let (before, rest) = remaining.split_at(pos);
+            let (matched, after) = rest.split_at(target.len());
+            
+            result.insert_str(0, after);
+            result.insert_str(0, replacement);
+            
+            remaining = before;
+            remaining_lower = &text_lower[..pos];
+        }
+        result.insert_str(0, remaining);
+    } else {
+        // Forwards: start from beginning
+        while let Some(pos) = remaining_lower.find(&target_lower) {
+            let (before, rest) = remaining.split_at(pos);
+            let (_, after) = rest.split_at(target.len());
+            
+            result.push_str(before);
+            result.push_str(replacement);
+            
+            remaining = after;
+            remaining_lower = &remaining.to_lowercase();
+        }
+        result.push_str(remaining);
+    }
+    
+    result
+}
+
+/// Replace from end to beginning
+fn replace_backwards(text: &str, target: &str, replacement: &str) -> String {
+    if target.is_empty() {
+        return text.to_string();
+    }
+    
+    let mut result = String::new();
+    let mut remaining = text;
+    
+    while let Some(pos) = remaining.rfind(target) {
+        let (before, rest) = remaining.split_at(pos);
+        let (_, after) = rest.split_at(target.len());
+        
+        result.insert_str(0, after);
+        result.insert_str(0, replacement);
+        
+        remaining = before;
+    }
+    result.insert_str(0, remaining);
+    result
+}
+
 #[derive(Default)]
 pub struct State {
     static_str_pool: HashMap<&'static str, id>,
@@ -866,6 +937,67 @@ pub const CLASSES: ClassExports = objc_classes! {
     let result_ns_string = msg_class![env; _touchHLE_NSString alloc];
     *env.objc.borrow_mut(result_ns_string) = StringHostObject::Utf16(result);
     autorelease(env, result_ns_string)
+}
+
+- (id)stringByReplacingOccurrencesOfString:(id)target // NSString*
+                                withString:(id)replacement // NSString*
+                                   options:(NSStringCompareOptions)options
+                                     range:(NSRange)range {
+    // TODO: support foreign subclasses
+    
+    // Validate parameters
+    if target == nil || replacement == nil {
+        log!("Warning: stringByReplacingOccurrences called with nil parameter");
+        return retain(env, this);
+    }
+    
+    // Get string content
+    let main_string = to_rust_string(env, this);
+    let target_str = to_rust_string(env, target);
+    let replacement_str = to_rust_string(env, replacement);
+    
+    // Validate range
+    let str_len = main_string.chars().count();
+    if range.location as usize > str_len || 
+       (range.location + range.length) as usize > str_len {
+        log!("Warning: stringByReplacingOccurrences called with invalid range");
+        return retain(env, this);
+    }
+    
+    // Extract the portion to search
+    let chars: Vec<char> = main_string.chars().collect();
+    let start = range.location as usize;
+    let end = (range.location + range.length) as usize;
+    
+    let before: String = chars[..start].iter().collect();
+    let search_portion: String = chars[start..end].iter().collect();
+    let after: String = chars[end..].iter().collect();
+    
+    // Perform replacement based on options
+    let result_portion = if options & NSCaseInsensitiveSearch != 0 {
+        // Case-insensitive search
+        replace_case_insensitive(&search_portion, &target_str, &replacement_str, options)
+    } else if options & NSLiteralSearch != 0 {
+        // Literal search (default behavior)
+        if options & NSBackwardsSearch != 0 {
+            replace_backwards(&search_portion, &target_str, &replacement_str)
+        } else {
+            search_portion.replace(&target_str, &replacement_str)
+        }
+    } else {
+        // Default: literal forward search
+        search_portion.replace(&target_str, &replacement_str)
+    };
+    
+    // Reconstruct string
+    let final_string = format!("{}{}{}", before, result_portion, after);
+    
+    log_dbg!(
+        "stringByReplacingOccurrences: '{}' -> '{}' (target: '{}', replacement: '{}', options: {:#x}, range: {:?})",
+        main_string, final_string, target_str, replacement_str, options, range
+    );
+    
+    from_rust_string(env, final_string)
 }
 
 - (id)stringByAppendingString:(id)other { // NSString*

@@ -12,26 +12,57 @@ use crate::abi::GuestFunction;
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::mem::MutVoidPtr;
 use crate::Environment;
+use std::collections::HashMap;
+
+/// Storage for C++ destructors registered via __cxa_atexit
+#[derive(Default)]
+pub struct State {
+    /// Map from DSO handle to list of (destructor, argument) pairs
+    dso_destructors: HashMap<u32, Vec<(GuestFunction, MutVoidPtr)>>,
+}
+
+impl State {
+    fn get(env: &mut Environment) -> &mut Self {
+        &mut env.libc_state.cxxabi
+    }
+}
 
 fn __cxa_atexit(
-    _env: &mut Environment,
+    env: &mut Environment,
     func: GuestFunction, // void (*func)(void *)
     p: MutVoidPtr,
     d: MutVoidPtr,
 ) -> i32 {
-    // TODO: when this is implemented, make sure it's properly compatible with
-    // C atexit.
-    log!(
-        "TODO: __cxa_atexit({:?}, {:?}, {:?}) (unimplemented)",
-        func,
-        p,
-        d
-    );
+    log_dbg!("__cxa_atexit({:?}, {:?}, {:?})", func, p, d);
+    
+    // Store destructor for later execution
+    let dso_handle = d.to_bits();
+    let state = State::get(env);
+    
+    state.dso_destructors
+        .entry(dso_handle)
+        .or_insert_with(Vec::new)
+        .push((func, p));
+    
     0 // success
 }
 
-fn __cxa_finalize(_env: &mut Environment, d: MutVoidPtr) {
-    log!("TODO: __cxa_finalize({:?}) (unimplemented)", d);
+fn __cxa_finalize(env: &mut Environment, d: MutVoidPtr) {
+    log_dbg!("__cxa_finalize({:?})", d);
+    
+    let state = State::get(env);
+    let dso_handle = d.to_bits();
+    
+    // Run destructors for this DSO in reverse order (LIFO)
+    if let Some(destructors) = state.dso_destructors.remove(&dso_handle) {
+        for (func, arg) in destructors.into_iter().rev() {
+            log_dbg!("  Calling destructor {:?}({:?})", func, arg);
+            
+            // Call the destructor function
+            // Note: We ignore errors here as we're in cleanup code
+            let _ = func.call_from_host(env, &[arg.to_bits()]);
+        }
+    }
 }
 
 fn ___objc_personality_v0(_env: &mut Environment) -> i32 {
