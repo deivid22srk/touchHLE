@@ -13,7 +13,7 @@ use crate::objc::{
 };
 
 pub struct UIPageControlHostObject {
-    superclass: super::ui_control::UIControlHostObject,
+    superclass: super::UIControlHostObject,
     number_of_pages: NSInteger,
     current_page: NSInteger,
     hides_for_single_page: bool,
@@ -40,7 +40,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 (env, this, _cmd);
 
-@implementation UIPageControl: super::UIControl
+@implementation UIPageControl: UIControl
 
 + (id)allocWithZone:(NSZonePtr)_zone {
     let host_object = Box::<UIPageControlHostObject>::default();
