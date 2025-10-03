@@ -1777,7 +1777,8 @@ pub fn from_rust_string(env: &mut Environment, from: String) -> id {
     if env.objc.get_host_object(string).is_none() {
         log!("Critical: Allocated NSString {:?} has no host_object! String content: {:?}", 
              string, from);
-        // Try to continue anyway - the borrow_mut will panic with better error message
+        // Try to continue anyway - borrow_mut will panic with
+        // better error message
     }
     
     let host_object: &mut StringHostObject = env.objc.borrow_mut(string);

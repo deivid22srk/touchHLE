@@ -676,8 +676,9 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
                 let class_name = class_dict["$classname"].as_string().unwrap();
 
                 class = {
-                    // Use link_class instead of get_known_class to allow placeholders
-                    // for unimplemented classes from NIBArchive files
+                    // Use link_class instead of get_known_class
+                    // to allow placeholders for unimplemented classes
+                    // from NIBArchive files
                     let class_name = class_name.to_string();
                     log_dbg!("NSKeyedUnarchiver: Unarchiving object of class '{}'", class_name);
                     env.objc.link_class(&class_name, /* is_metaclass: */ false, &mut env.mem)
