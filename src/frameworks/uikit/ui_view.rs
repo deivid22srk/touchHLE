@@ -12,9 +12,13 @@ pub mod ui_alert_view;
 pub mod ui_control;
 pub mod ui_image_view;
 pub mod ui_label;
+pub mod ui_navigation_bar;
+pub mod ui_page_control;
 pub mod ui_picker_view;
+pub mod ui_progress_view;
 pub mod ui_scroll_view;
 pub mod ui_table_view;
+pub mod ui_toolbar;
 pub mod ui_web_view;
 pub mod ui_window;
 
