@@ -16,6 +16,9 @@ use std::rc::Rc;
 use zip::result::ZipError;
 use zip::ZipArchive;
 
+#[cfg(target_family = "unix")]
+use std::os::fd::FromRawFd;
+
 /// A helper struct to build an FsNode with files and directories coming in
 /// arbitrary order. This is required, because ZIP files are allowed to store
 /// entries in arbitrary order.
@@ -127,8 +130,14 @@ impl BundleData {
         if path.is_dir() {
             return Self::open_host_dir(path);
         }
-        // Try opening as IPA even without an .ipa extension.
-        // Works with /proc/self/fd and SAF-backed FDs on Android.
+        
+        #[cfg(target_family = "unix")]
+        if let Some(fd) = Self::fd_from_proc_path(path) {
+            if let Ok(bundle) = unsafe { Self::open_ipa_from_fd(fd) } {
+                return Ok(bundle);
+            }
+        }
+        
         if let Ok(bundle) = Self::open_ipa(path) {
             return Ok(bundle);
         }
@@ -136,6 +145,34 @@ impl BundleData {
             "{} is not a directory or an IPA file",
             path.display()
         ))
+    }
+
+    #[cfg(target_family = "unix")]
+    fn fd_from_proc_path(path: &Path) -> Option<i32> {
+        let s = path.to_str()?;
+        let prefix = "/proc/self/fd/";
+        if let Some(rest) = s.strip_prefix(prefix) {
+            if let Ok(n) = rest.split('/').next().unwrap_or("").parse::<i32>() {
+                return Some(n);
+            }
+        }
+        None
+    }
+
+    #[cfg(target_family = "unix")]
+    unsafe fn open_ipa_from_fd(fd: i32) -> Result<BundleData, String> {
+        let dup_fd = libc::dup(fd);
+        if dup_fd < 0 {
+            return Err(format!(
+                "Could not dup FD {fd}: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+        let file = std::fs::File::from_raw_fd(dup_fd);
+        let mut zip = ZipArchive::new(file)
+            .map_err(|e| format!("Could not open IPA archive from fd: {e}"))?;
+        let bundle_path = Self::find_bundle_path_in_archive(&mut zip)?;
+        Ok(BundleData::Zip { zip, bundle_path })
     }
 
     pub(super) fn into_fs_node(self) -> FsNode {
