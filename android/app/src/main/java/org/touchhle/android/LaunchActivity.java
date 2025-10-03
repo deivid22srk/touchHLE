@@ -24,6 +24,9 @@ public class LaunchActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Prune old/stale cached game copies to avoid storage bloat
+        GameFileResolver.pruneCache(this, /*maxAgeMs=*/3L*24*60*60*1000, /*maxTotalBytes=*/1L*1024*1024*1024);
+
         // Check if we have a previously selected folder
         SharedPreferences prefs = getSharedPreferences("touchhle_prefs", MODE_PRIVATE);
         String folderUriString = prefs.getString(PREF_FOLDER_URI, null);

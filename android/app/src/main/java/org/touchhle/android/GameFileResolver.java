@@ -2,6 +2,7 @@ package org.touchhle.android;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.ParcelFileDescriptor;
 
 import androidx.documentfile.provider.DocumentFile;
 
@@ -22,10 +23,12 @@ final class GameFileResolver {
     static final class Result {
         private final String path;
         private final File cacheFile;
+        private final ParcelFileDescriptor pfd;
 
-        Result(String path, File cacheFile) {
+        Result(String path, File cacheFile, ParcelFileDescriptor pfd) {
             this.path = path;
             this.cacheFile = cacheFile;
+            this.pfd = pfd;
         }
 
         String getPath() {
@@ -34,6 +37,10 @@ final class GameFileResolver {
 
         File getCacheFile() {
             return cacheFile;
+        }
+
+        ParcelFileDescriptor getPfd() {
+            return pfd;
         }
     }
 
@@ -46,7 +53,7 @@ final class GameFileResolver {
         if ("file".equalsIgnoreCase(scheme)) {
             File file = new File(uri.getPath());
             if (file.exists()) {
-                return new Result(file.getAbsolutePath(), null);
+                return new Result(file.getAbsolutePath(), null, null);
             }
             return null;
         }
@@ -56,8 +63,20 @@ final class GameFileResolver {
             if (documentFile == null || !documentFile.exists()) {
                 return null;
             }
-            File cached = copyToCache(context, documentFile, "launch_");
-            return cached != null ? new Result(cached.getAbsolutePath(), cached) : null;
+            String name = documentFile.getName();
+            boolean isDir = documentFile.isDirectory();
+            boolean isIpa = (name != null && !isDir && name.toLowerCase(Locale.ROOT).endsWith(".ipa"));
+            if (isIpa) {
+                ParcelFileDescriptor pfd = context.getContentResolver().openFileDescriptor(documentFile.getUri(), "r");
+                if (pfd == null) {
+                    return null;
+                }
+                String fdPath = "/proc/self/fd/" + pfd.getFd();
+                return new Result(fdPath, null, pfd);
+            } else {
+                File cached = copyToCache(context, documentFile, "launch_");
+                return cached != null ? new Result(cached.getAbsolutePath(), cached, null) : null;
+            }
         }
 
         return null;
@@ -65,6 +84,48 @@ final class GameFileResolver {
 
     static File copyForInspection(Context context, DocumentFile documentFile) throws IOException {
         return copyToCache(context, documentFile, "inspect_");
+    }
+
+    static void pruneCache(Context context, long maxAgeMs, long maxTotalBytes) {
+        File cacheRoot = new File(context.getCacheDir(), CACHE_DIR);
+        if (!cacheRoot.exists() || !cacheRoot.isDirectory()) {
+            return;
+        }
+        File[] entries = cacheRoot.listFiles();
+        if (entries == null) return;
+        long now = System.currentTimeMillis();
+        // Age-based prune
+        for (File f : entries) {
+            if (now - f.lastModified() > maxAgeMs) {
+                deleteRecursively(f);
+            }
+        }
+        // Size-based prune
+        entries = cacheRoot.listFiles();
+        if (entries == null) return;
+        long total = 0;
+        for (File f : entries) total += dirSize(f);
+        if (total > maxTotalBytes) {
+            java.util.Arrays.sort(entries, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+            int i = 0;
+            while (total > maxTotalBytes && i < entries.length) {
+                long sz = dirSize(entries[i]);
+                deleteRecursively(entries[i]);
+                total -= sz;
+                i++;
+            }
+        }
+    }
+
+    private static long dirSize(File f) {
+        if (!f.exists()) return 0;
+        if (f.isFile()) return f.length();
+        long s = 0;
+        File[] kids = f.listFiles();
+        if (kids != null) {
+            for (File k : kids) s += dirSize(k);
+        }
+        return s;
     }
 
     static void deleteRecursively(File file) {

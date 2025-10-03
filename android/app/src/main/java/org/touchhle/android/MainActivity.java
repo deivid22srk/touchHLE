@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.os.ParcelFileDescriptor;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,6 +44,7 @@ public class MainActivity extends SDLActivity {
     private static final String PREF_SHOW_RAM = "show_ram";
 
     private File tempGameFile;
+    private ParcelFileDescriptor tempPfd;
     private String tempGamePath;
     private String selectedGameName;
     private boolean forceFullscreen;
@@ -77,6 +79,7 @@ public class MainActivity extends SDLActivity {
                     if (resolution != null) {
                         tempGamePath = resolution.getPath();
                         tempGameFile = resolution.getCacheFile();
+                        tempPfd = resolution.getPfd();
                         selectedGameName = (gameName != null && !gameName.trim().isEmpty())
                                 ? gameName
                                 : new File(tempGamePath).getName();
@@ -178,7 +181,11 @@ public class MainActivity extends SDLActivity {
         if (tempGameFile != null) {
             GameFileResolver.deleteRecursively(tempGameFile);
         }
+        if (tempPfd != null) {
+            try { tempPfd.close(); } catch (Exception ignored) {}
+        }
         tempGameFile = null;
+        tempPfd = null;
         tempGamePath = null;
         selectedGameName = null;
         TouchHLENative.clearLaunch();
