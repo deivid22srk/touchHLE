@@ -142,22 +142,10 @@ fn fstat_inner(env: &mut Environment, fd: FileDescriptor, buf: MutPtr<stat>) -> 
     let now_secs = now.as_secs() as i32;
     let now_nsecs = now.subsec_nanos() as i32;
     
-    stat_data.st_atimespec = timespec {
-        tv_sec: now_secs,
-        tv_nsec: now_nsecs,
-    };
-    stat_data.st_mtimespec = timespec {
-        tv_sec: now_secs,
-        tv_nsec: now_nsecs,
-    };
-    stat_data.st_ctimespec = timespec {
-        tv_sec: now_secs,
-        tv_nsec: now_nsecs,
-    };
-    stat_data.st_birthtimespec = timespec {
-        tv_sec: now_secs,
-        tv_nsec: now_nsecs,
-    };
+    stat_data.st_atimespec = timespec::new(now_secs, now_nsecs);
+    stat_data.st_mtimespec = timespec::new(now_secs, now_nsecs);
+    stat_data.st_ctimespec = timespec::new(now_secs, now_nsecs);
+    stat_data.st_birthtimespec = timespec::new(now_secs, now_nsecs);
 
     env.mem.write(buf, stat_data);
 

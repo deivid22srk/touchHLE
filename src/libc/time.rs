@@ -464,6 +464,12 @@ pub struct timespec {
 }
 unsafe impl SafeRead for timespec {}
 
+impl timespec {
+    pub fn new(tv_sec: time_t, tv_nsec: i32) -> Self {
+        timespec { tv_sec, tv_nsec }
+    }
+}
+
 #[allow(non_camel_case_types)]
 #[repr(C, packed)]
 struct timezone {
