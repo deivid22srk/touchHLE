@@ -6,18 +6,34 @@ on:
   pull_request:
     branches: [ "trunk" ]
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build from'
+        required: true
+        default: 'trunk'
+      platform:
+        description: 'Platform to build for'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - macos
+          - windows
+          - android
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build-osx:
-
+    if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' || github.event_name != 'workflow_dispatch'
     runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.inputs.branch }}
           fetch-depth: 0 # touchHLE's git-describe versioning needs tag history
       - name: Install clang-format
         run: brew install clang-format
@@ -82,12 +98,13 @@ jobs:
           path: tests/TestApp.app
 
   build-android:
-
+    if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android' || github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
       with:
+        ref: ${{ github.event.inputs.branch }}
         fetch-depth: 0 # touchHLE's git-describe versioning needs tag history
     - name: Check formatting
       run: dev-scripts/format.sh --check
@@ -173,12 +190,13 @@ jobs:
         path: touchHLE.apk
 
   build-win:
-
+    if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' || github.event_name != 'workflow_dispatch'
     runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v3
       with:
+        ref: ${{ github.event.inputs.branch }}
         fetch-depth: 0 # touchHLE's git-describe versioning needs tag history
     # Apparently the Windows runner already has clang-format? That's nice.
     - name: Check formatting

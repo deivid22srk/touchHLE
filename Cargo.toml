@@ -70,6 +70,7 @@ touchHLE_openal_soft_wrapper = { path = "src/audio/openal_soft_wrapper" }
 touchHLE_pvrt_decompress_wrapper = { path = "src/image/pvrt_decompress_wrapper" }
 touchHLE_stb_image_wrapper = { path = "src/image/stb_image_wrapper" }
 touchHLE_version = { path = "src/version" }
+openh264 = "0.7.0"
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"
