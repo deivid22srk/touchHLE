@@ -2,9 +2,9 @@ name: Build touchHLE
 
 on:
   push:
-    branches: [ "trunk" ]
+    branches: [ "feature/native-video-playback" ]
   pull_request:
-    branches: [ "trunk" ]
+    branches: [ "feature/native-video-playback" ]
   workflow_dispatch:
     inputs:
       branch:
