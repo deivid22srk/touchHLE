@@ -201,12 +201,16 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())dealloc {
     use crate::objc::release;
     
-    let host_obj = env.objc.borrow_mut::<UITableViewHostObject>(this);
-    if host_obj.data_source != nil {
-        release(env, host_obj.data_source);
+    let (data_source, delegate) = {
+        let host_obj = env.objc.borrow_mut::<UITableViewHostObject>(this);
+        (host_obj.data_source, host_obj.delegate)
+    };
+    
+    if data_source != nil {
+        release(env, data_source);
     }
-    if host_obj.delegate != nil {
-        release(env, host_obj.delegate);
+    if delegate != nil {
+        release(env, delegate);
     }
     
     () = msg_super![env; this dealloc]
@@ -233,25 +237,35 @@ pub const CLASSES: ClassExports = objc_classes! {
     
     let this: id = msg![env; this initWithFrame:frame];
     if this != nil {
-        let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
-        host_obj.style = style;
-        
-        if reuse_identifier != nil {
-            retain(env, reuse_identifier);
+        {
+            let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
+            host_obj.style = style;
+            
+            if reuse_identifier != nil {
+                retain(env, reuse_identifier);
+            }
+            host_obj.reuse_identifier = reuse_identifier;
         }
-        host_obj.reuse_identifier = reuse_identifier;
         
         // Create content view
         let content_view: id = msg_class![env; UIView alloc];
         let content_view: id = msg![env; content_view initWithFrame:frame];
-        host_obj.content_view = content_view;
+        
+        {
+            let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
+            host_obj.content_view = content_view;
+        }
         
         () = msg![env; this addSubview:content_view];
         
         // Create text label
         let text_label: id = msg_class![env; UILabel alloc];
         let text_label: id = msg![env; text_label initWithFrame:frame];
-        host_obj.text_label = text_label;
+        
+        {
+            let host_obj = env.objc.borrow_mut::<UITableViewCellHostObject>(this);
+            host_obj.text_label = text_label;
+        }
         
         () = msg![env; content_view addSubview:text_label];
         

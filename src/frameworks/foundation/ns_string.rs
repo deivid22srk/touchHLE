@@ -988,7 +988,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         }
     } else {
         // Default: literal forward search
-        search_portion.replace(&target_str, &replacement_str)
+        search_portion.replace(target_str.as_ref(), replacement_str.as_ref())
     };
     
     // Reconstruct string

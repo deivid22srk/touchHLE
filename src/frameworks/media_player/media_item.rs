@@ -167,11 +167,16 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())dealloc {
     use crate::objc::release;
     
-    let host_obj = env.objc.borrow_mut::<MPMediaItemHostObject>(this);
-    for (_, value) in host_obj.properties.drain() {
-        if value != nil {
-            release(env, value);
-        }
+    let values_to_release: Vec<_> = {
+        let host_obj = env.objc.borrow_mut::<MPMediaItemHostObject>(this);
+        host_obj.properties.drain()
+            .filter(|(_, value)| *value != nil)
+            .map(|(_, value)| value)
+            .collect()
+    };
+    
+    for value in values_to_release {
+        release(env, value);
     }
     
     () = msg_super![env; this dealloc]
