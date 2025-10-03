@@ -5,18 +5,29 @@
  */
 //! `MPMoviePlayerController` etc.
 
+use super::yuv;
 use crate::dyld::{ConstantExports, HostConstant};
 use crate::frameworks::foundation::{ns_string, ns_url, NSInteger};
 use crate::frameworks::uikit::ui_device::UIDeviceOrientation;
+use crate::fs::GuestPath;
+use crate::gles::gles11_raw as gles11;
+use crate::gles::GLES;
 use crate::objc::{
     id, msg, msg_class, nil, objc_classes, release, retain, ClassExports, HostObject, NSZonePtr,
 };
 use crate::Environment;
+use h264_decoder::Decoder;
 use std::collections::VecDeque;
+use std::io::Cursor;
+use symphonia::core::codecs::{Decoder as _, CODEC_TYPE_H264};
+use symphonia::core::errors::Error as SymphoniaError;
+use symphonia::core::formats::{FormatOptions, FormatReader};
+use symphonia::core::io::MediaSourceStream;
+use symphonia::core::meta::MetadataOptions;
 
 #[derive(Default)]
 pub struct State {
-    active_player: Option<id>,
+    pub active_player: Option<id>,
     /// Various apps (e.g. Crash Bandicoot Nitro Kart 3D and Spore Origins)
     /// create or start a player and await some kind of notification, but can't
     /// handle it if that notification happens immediately. This queue lets us
@@ -95,6 +106,11 @@ struct MPMoviePlayerControllerHostObject {
     content_url: id,
     playback_state: MPMoviePlaybackState,
     load_state: MPMovieLoadState,
+    reader: Option<Box<dyn FormatReader>>,
+    video_track_id: Option<u32>,
+    decoder: Option<Decoder>,
+    video_texture: Option<u32>,
+    frame_dimensions: Option<(u32, u32)>,
 }
 impl HostObject for MPMoviePlayerControllerHostObject {}
 
@@ -111,6 +127,11 @@ pub const CLASSES: ClassExports = objc_classes! {
         content_url: nil,
         playback_state: MPMoviePlaybackStateStopped,
         load_state: MPMovieLoadStateUnknown,
+        reader: None,
+        video_track_id: None,
+        decoder: None,
+        video_texture: None,
+        frame_dimensions: None,
     });
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
@@ -126,15 +147,42 @@ pub const CLASSES: ClassExports = objc_classes! {
     retain(env, url);
     let host_obj = env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this);
     host_obj.content_url = url;
-    host_obj.load_state = MPMovieLoadStatePlayable | MPMovieLoadStatePlaythroughOK;
 
-    // Act as if loading immediately completed (Spore Origins waits for this).
-    State::get(env).pending_notifications.push_back(
-        (MPMoviePlayerContentPreloadDidFinishNotification, this)
-    );
-    State::get(env).pending_notifications.push_back(
-        (MPMoviePlayerLoadStateDidChangeNotification, this)
-    );
+    if let Some(path) = ns_url::to_rust_path(env, url) {
+        if let Ok(bytes) = env.fs.read(&GuestPath::from(path)) {
+            let mss = MediaSourceStream::new(Box::new(Cursor::new(bytes)), Default::default());
+            let format_opts = FormatOptions {
+                enable_gapless: true,
+                ..Default::default()
+            };
+            let metadata_opts = MetadataOptions::default();
+
+            if let Ok(probed) = symphonia::default::get_probe().format(&Default::default(), mss, &format_opts, &metadata_opts) {
+                host_obj.reader = Some(probed.format);
+                if let Some(track) = host_obj.reader.as_ref().unwrap().tracks().iter().find(|t| t.codec_params.codec == CODEC_TYPE_H264) {
+                    host_obj.video_track_id = Some(track.id);
+                    if let Some(params) = &track.codec_params {
+                        if let (Some(width), Some(height)) = (params.width, params.height) {
+                            host_obj.frame_dimensions = Some((width as u32, height as u32));
+                        }
+                    }
+
+                    if let Ok(decoder) = Decoder::new() {
+                        host_obj.decoder = Some(decoder);
+                        host_obj.load_state = MPMovieLoadStatePlayable | MPMovieLoadStatePlaythroughOK;
+
+                        // Act as if loading immediately completed (Spore Origins waits for this).
+                        State::get(env).pending_notifications.push_back(
+                            (MPMoviePlayerContentPreloadDidFinishNotification, this)
+                        );
+                        State::get(env).pending_notifications.push_back(
+                            (MPMoviePlayerLoadStateDidChangeNotification, this)
+                        );
+                    }
+                }
+            }
+        }
+    }
 
     this
 }
@@ -192,17 +240,42 @@ pub const CLASSES: ClassExports = objc_classes! {
     retain(env, this);
     env.framework_state.media_player.movie_player.active_player = Some(this);
 
-    // Update playback state
-    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).playback_state = MPMoviePlaybackStatePlaying;
-    State::get(env).pending_notifications.push_back(
-        (MPMoviePlayerPlaybackStateDidChangeNotification, this)
-    );
+    let host_obj = env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this);
+    if host_obj.video_texture.is_none() {
+        if let Some((width, height)) = host_obj.frame_dimensions {
+            let gles = env.window().get_internal_gl_ctx();
+            let mut texture = 0;
+            unsafe {
+                gles.GenTextures(1, &mut texture);
+                gles.BindTexture(gles11::TEXTURE_2D, texture);
+                gles.TexImage2D(
+                    gles11::TEXTURE_2D,
+                    0,
+                    gles11::RGB as _,
+                    width as _,
+                    height as _,
+                    0,
+                    gles11::RGB,
+                    gles11::UNSIGNED_BYTE,
+                    std::ptr::null(),
+                );
+                gles.TexParameteri(
+                    gles11::TEXTURE_2D,
+                    gles11::TEXTURE_MIN_FILTER,
+                    gles11::LINEAR as _,
+                );
+                gles.TexParameteri(
+                    gles11::TEXTURE_2D,
+                    gles11::TEXTURE_MAG_FILTER,
+                    gles11::LINEAR as _,
+                );
+            }
+            host_obj.video_texture = Some(texture);
+        }
+    }
 
-    // Act as if playback immediately completed (various apps wait for this).
-    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).playback_state = MPMoviePlaybackStateStopped;
-    State::get(env).pending_notifications.push_back(
-        (MPMoviePlayerPlaybackDidFinishNotification, this)
-    );
+    // Update playback state
+    host_obj.playback_state = MPMoviePlaybackStatePlaying;
     State::get(env).pending_notifications.push_back(
         (MPMoviePlayerPlaybackStateDidChangeNotification, this)
     );
@@ -212,8 +285,16 @@ pub const CLASSES: ClassExports = objc_classes! {
     log_dbg!("[(MPMoviePlayerController*){:?} stop]", this);
     assert!(this == env.framework_state.media_player.movie_player.active_player.take().unwrap());
     
+    let host_obj = env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this);
+    if let Some(texture) = host_obj.video_texture.take() {
+        let gles = env.window().get_internal_gl_ctx();
+        unsafe {
+            gles.DeleteTextures(1, &texture);
+        }
+    }
+
     // Update playback state
-    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).playback_state = MPMoviePlaybackStateStopped;
+    host_obj.playback_state = MPMoviePlaybackStateStopped;
     State::get(env).pending_notifications.push_back(
         (MPMoviePlayerPlaybackStateDidChangeNotification, this)
     );
@@ -236,6 +317,71 @@ pub const CLASSES: ClassExports = objc_classes! {
 /// For use by `NSRunLoop` via [super::handle_players]: check movie players'
 /// status, send notifications if necessary.
 pub(super) fn handle_players(env: &mut Environment) {
+    if let Some(player) = State::get(env).active_player {
+        let mut host_obj = env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(player);
+        if host_obj.playback_state == MPMoviePlaybackStatePlaying {
+            if let (Some(reader), Some(video_track_id), Some(decoder), Some(video_texture), Some((width, height))) = (
+                host_obj.reader.as_mut(),
+                host_obj.video_track_id,
+                host_obj.decoder.as_mut(),
+                host_obj.video_texture,
+                host_obj.frame_dimensions,
+            ) {
+                match reader.next_packet() {
+                    Ok(packet) => {
+                        if packet.track_id() == video_track_id {
+                            match decoder.decode(packet.data) {
+                                Ok(Some(picture)) => {
+                                    let mut rgb_buf = vec![0u8; (width * height * 3) as usize];
+                                    yuv::yuv_to_rgb(
+                                        picture.y_with_stride().0,
+                                        picture.u_with_stride().0,
+                                        picture.v_with_stride().0,
+                                        width as usize,
+                                        height as usize,
+                                        &mut rgb_buf,
+                                    );
+
+                                    let gles = env.window().get_internal_gl_ctx();
+                                    unsafe {
+                                        gles.BindTexture(gles11::TEXTURE_2D, video_texture);
+                                        gles.TexSubImage2D(
+                                            gles11::TEXTURE_2D,
+                                            0,
+                                            0,
+                                            0,
+                                            width as _,
+                                            height as _,
+                                            gles11::RGB,
+                                            gles11::UNSIGNED_BYTE,
+                                            rgb_buf.as_ptr() as *const _,
+                                        );
+                                    }
+                                }
+                                Ok(None) => {}
+                                Err(e) => {
+                                    log!("H.264 decoding error: {:?}", e);
+                                }
+                            }
+                        }
+                    }
+                    Err(SymphoniaError::IoError(_)) => {
+                        // End of stream
+                        host_obj.playback_state = MPMoviePlaybackStateStopped;
+                        State::get(env).pending_notifications.push_back((
+                            MPMoviePlayerPlaybackDidFinishNotification,
+                            player,
+                        ));
+                        let _: () = msg![env; player stop];
+                    }
+                    Err(e) => {
+                        log!("Error reading packet: {:?}", e);
+                    }
+                }
+            }
+        }
+    }
+
     while let Some(notif) = State::get(env).pending_notifications.pop_front() {
         let (name, object) = notif;
         let name = ns_string::get_static_str(env, name);

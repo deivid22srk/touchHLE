@@ -10,6 +10,7 @@ pub mod media_picker_controller;
 pub mod media_query;
 pub mod movie_player;
 pub mod music_player;
+pub mod yuv;
 
 #[derive(Default)]
 pub struct State {

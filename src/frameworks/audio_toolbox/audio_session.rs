@@ -10,7 +10,11 @@ use crate::dyld::{export_c_func, FunctionExports};
 use crate::frameworks::carbon_core::OSStatus;
 use crate::frameworks::core_audio_types::{debug_fourcc, fourcc};
 use crate::frameworks::core_foundation::cf_run_loop::{CFRunLoopMode, CFRunLoopRef};
-use crate::mem::{guest_size_of, ConstVoidPtr, GuestUSize, MutPtr, MutVoidPtr};
+use crate::frameworks::openal::{
+    alcCreateContext, alcMakeContextCurrent, alcOpenDevice, alcProcessContext, alcSuspendContext,
+    GuestALCcontext, GuestALCdevice, ALC_FREQUENCY,
+};
+use crate::mem::{guest_size_of, ConstVoidPtr, GuestUSize, MutPtr, MutVoidPtr, Ptr};
 use crate::Environment;
 
 type AudioSessionInterruptionListener = GuestFunction;
@@ -34,6 +38,9 @@ const kAudioSessionCategory_SoloAmbientSound: u32 = fourcc(b"solo");
 const kAudioSessionProperty_CurrentHardwareIOBufferDuration: u32 = fourcc(b"chbd");
 
 pub struct State {
+    initialized: bool,
+    device: Option<MutPtr<GuestALCdevice>>,
+    context: Option<MutPtr<GuestALCcontext>>,
     audio_session_category: u32,
     pub current_hardware_sample_rate: f64,
     pub current_hardware_output_number_channels: u32,
@@ -44,6 +51,9 @@ impl Default for State {
     fn default() -> Self {
         // TODO: Check values from a real device
         State {
+            initialized: false,
+            device: None,
+            context: None,
             // This is the default value.
             audio_session_category: kAudioSessionCategory_SoloAmbientSound,
             // Values taken from an iOS 2 simulator
@@ -57,7 +67,7 @@ impl Default for State {
 }
 
 fn AudioSessionInitialize(
-    _env: &mut Environment,
+    env: &mut Environment,
     in_run_loop: CFRunLoopRef,
     in_run_loop_mode: CFRunLoopMode,
     in_interruption_listener: AudioSessionInterruptionListener,
@@ -72,6 +82,33 @@ fn AudioSessionInitialize(
         in_client_data,
         result
     );
+
+    let state = &mut env.framework_state.audio_toolbox.audio_session;
+    if state.initialized {
+        return result;
+    }
+
+    let device = alcOpenDevice(env, Ptr::null());
+    if device.is_null() {
+        log!("Failed to open OpenAL device");
+        return -1;
+    }
+
+    let attr_list = [
+        ALC_FREQUENCY,
+        state.current_hardware_sample_rate as i32,
+        0,
+    ];
+    let context = alcCreateContext(env, device, attr_list.as_ptr().cast());
+    if context.is_null() {
+        log!("Failed to create OpenAL context");
+        return -1;
+    }
+
+    state.device = Some(device);
+    state.context = Some(context);
+    state.initialized = true;
+
     result
 }
 
@@ -156,23 +193,36 @@ fn AudioSessionSetProperty(
         log!("Warning: AudioSessionSetProperty() failed");
         return kAudioSessionBadPropertySizeError;
     }
-    if in_ID == kAudioSessionProperty_PreferredHardwareSampleRate {
-        env.framework_state
-            .audio_toolbox
-            .audio_session
-            .current_hardware_sample_rate = env.mem.read(in_data.cast::<f64>());
-        log!(
-            "AudioSessionSetProperty current_hardware_sample_rate {}",
-            env.framework_state
-                .audio_toolbox
-                .audio_session
-                .current_hardware_sample_rate
-        );
+
+    let state = &mut env.framework_state.audio_toolbox.audio_session;
+    match in_ID {
+        kAudioSessionProperty_PreferredHardwareSampleRate => {
+            state.current_hardware_sample_rate = env.mem.read(in_data.cast::<f64>());
+            log!(
+                "AudioSessionSetProperty current_hardware_sample_rate {}",
+                state.current_hardware_sample_rate
+            );
+        }
+        kAudioSessionProperty_AudioCategory => {
+            state.audio_session_category = env.mem.read(in_data.cast::<u32>());
+            log!(
+                "AudioSessionSetProperty audio_session_category {}",
+                state.audio_session_category
+            );
+        }
+        kAudioSessionProperty_PreferredHardwareIOBufferDuration => {
+            state.current_hardware_io_buffer_duration = env.mem.read(in_data.cast::<f32>());
+            log!(
+                "AudioSessionSetProperty current_hardware_io_buffer_duration {}",
+                state.current_hardware_io_buffer_duration
+            );
+        }
+        _ => unreachable!(),
     }
 
     let result = 0; // success
     log_dbg!(
-        "AudioSessionSetProperty({:?}, {:?}, {:?} ({:?})) -> {:?}",
+        "AudioSessionSetProperty({:?}, {:?}, {:?} ({:?})) -> {:?})",
         in_ID,
         in_data_size,
         in_data,
@@ -182,9 +232,21 @@ fn AudioSessionSetProperty(
     result
 }
 
-fn AudioSessionSetActive(_env: &mut Environment, active: bool) -> OSStatus {
+fn AudioSessionSetActive(env: &mut Environment, active: bool) -> OSStatus {
     let result = 0; // success
-    log_dbg!("AudioSessionSetActive({:?}) -> {:?}", active, result);
+    log_dbg!("AudioSessionSetActive({:?}) -> {:?})", active, result);
+
+    let state = &env.framework_state.audio_toolbox.audio_session;
+    if let Some(context) = state.context {
+        if active {
+            alcMakeContextCurrent(env, context);
+            alcProcessContext(env, context);
+        } else {
+            alcSuspendContext(env, context);
+            alcMakeContextCurrent(env, Ptr::null());
+        }
+    }
+
     result
 }
 

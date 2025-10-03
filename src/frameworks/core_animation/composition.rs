@@ -15,6 +15,7 @@ use super::ca_layer::CALayerHostObject;
 use crate::frameworks::core_graphics::{
     cg_bitmap_context, cg_color, cg_image, CGFloat, CGPoint, CGRect,
 };
+use crate::frameworks::media_player::movie_player::MPMoviePlayerControllerHostObject;
 use crate::gles::gles11_raw as gles11; // constants only
 use crate::gles::gles11_raw::types::*;
 use crate::gles::present::{present_frame, FpsCounter};
@@ -63,6 +64,32 @@ unsafe fn load_matrix(gles: &mut dyn GLES, matrix: Matrix<4>) {
 ///
 /// Returns the time a recomposite is due, if any.
 pub fn recomposite_if_necessary(env: &mut Environment, force: bool) -> Option<Instant> {
+    if let Some(player) = env.framework_state.media_player.movie_player.active_player {
+        let host_obj = env.objc.borrow::<MPMoviePlayerControllerHostObject>(player);
+        if let Some(texture) = host_obj.video_texture {
+            let present_frame_args = (
+                env.window().viewport(),
+                env.window().rotation_matrix(),
+                env.window().virtual_cursor_visible_at(),
+            );
+            let window = env.window.as_mut().unwrap();
+            window.make_internal_gl_ctx_current();
+            let gles = window.get_internal_gl_ctx();
+            unsafe {
+                gles.BindTexture(gles11::TEXTURE_2D, texture);
+                gles.BindFramebufferOES(gles11::FRAMEBUFFER_OES, 0);
+                present_frame(
+                    gles,
+                    present_frame_args.0,
+                    present_frame_args.1,
+                    present_frame_args.2,
+                );
+            }
+            env.window().swap_window();
+            return env.framework_state.core_animation.composition.recomposite_next;
+        }
+    }
+
     // Assumes the last window in the list is the one on top.
     // TODO: this is not correct once we support zPosition.
     // TODO: can there be windows smaller than the screen? If so we need to draw
