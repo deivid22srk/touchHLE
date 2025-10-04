@@ -14,8 +14,34 @@ pub const CLASSES: ClassExports = objc_classes! {
 @implementation MPMediaLibrary: NSObject
 
 + (id)defaultMediaLibrary {
-    log!("TODO: [MPMediaLibrary defaultMediaLibrary] (not implemented yet)");
-    nil
+    use crate::objc::HostObject;
+    
+    struct MPMediaLibraryHostObject;
+    impl HostObject for MPMediaLibraryHostObject {}
+    
+    log_dbg!("[MPMediaLibrary defaultMediaLibrary] - creating stub media library");
+    
+    let library: id = msg![env; this alloc];
+    let library = if library != nil {
+        msg![env; library init]
+    } else {
+        nil
+    };
+    library
+}
+
++ (id)alloc {
+    use crate::objc::HostObject;
+    
+    struct MPMediaLibraryHostObject;
+    impl HostObject for MPMediaLibraryHostObject {}
+    
+    let host_object = Box::new(MPMediaLibraryHostObject);
+    env.objc.alloc_object(this, host_object, &mut env.mem)
+}
+
+- (id)init {
+    this
 }
 
 @end

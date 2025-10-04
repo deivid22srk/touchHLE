@@ -81,11 +81,38 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
                 "$classname".to_string(),
                 Value::String(class_name.to_string()),
             );
-            let classes = vec![
-                Value::String(class_name.to_string()),
-                Value::String("NSObject".to_string()),
-            ];
-            class_dict.insert("$classes".to_string(), Value::Array(classes));
+            
+            // Build proper class hierarchy for better compatibility
+            let mut class_hierarchy = vec![Value::String(class_name.to_string())];
+            
+            // Add common superclass hierarchy based on class name
+            if class_name.starts_with("UI") {
+                if class_name.contains("View") || class_name.contains("Control") || 
+                   class_name.contains("Button") || class_name.contains("Label") ||
+                   class_name.contains("Image") || class_name.contains("Scroll") ||
+                   class_name.contains("Table") || class_name.contains("Text") ||
+                   class_name.contains("Picker") || class_name.contains("Slider") ||
+                   class_name.contains("Switch") || class_name.contains("Stepper") ||
+                   class_name.contains("Progress") || class_name.contains("Activity") ||
+                   class_name.contains("Navigation") || class_name.contains("Tab") ||
+                   class_name.contains("Toolbar") || class_name.contains("Search") {
+                    class_hierarchy.push(Value::String("UIView".to_string()));
+                    class_hierarchy.push(Value::String("UIResponder".to_string()));
+                } else if class_name.contains("Controller") {
+                    class_hierarchy.push(Value::String("UIResponder".to_string()));
+                }
+            } else if class_name.starts_with("NS") {
+                if class_name.contains("String") {
+                    // NSString hierarchy is already correct
+                } else if class_name.contains("Number") || class_name.contains("Value") ||
+                          class_name.contains("Array") || class_name.contains("Dictionary") ||
+                          class_name.contains("Set") || class_name.contains("Data") {
+                    // Collections and value objects
+                }
+            }
+            
+            class_hierarchy.push(Value::String("NSObject".to_string()));
+            class_dict.insert("$classes".to_string(), Value::Array(class_hierarchy));
             objects.push(Value::Dictionary(class_dict));
             uid
         };
@@ -108,7 +135,19 @@ fn convert_nibarchive_to_plist(slice: &[u8]) -> Result<Value, Error> {
                     obj_dict.insert(key.to_string(), Value::Uid(Uid::new(0)));
                     continue;
                 }
-                ValueVariant::ObjectRef(idx) => Value::Uid(Uid::new(*idx as u64 + 1)),
+                ValueVariant::ObjectRef(idx) => {
+                    // Validate object reference index
+                    let ref_idx = *idx as u64 + 1;
+                    if ref_idx as usize >= objects.len() + nib.objects().len() {
+                        log!(
+                            "Warning: NIBArchive invalid object reference {} in class '{}' key '{}'",
+                            idx, class_name, key
+                        );
+                        obj_dict.insert(key.to_string(), Value::Uid(Uid::new(0)));
+                        continue;
+                    }
+                    Value::Uid(Uid::new(ref_idx))
+                }
             };
             obj_dict.insert(key.to_string(), val);
         }
@@ -702,7 +741,7 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
             let new_object: id = msg![env; class alloc];
             if new_object == nil {
                 log!(
-                    "Warning: Failed to allocate object of class during unarchiving at key {:?}",
+                    "Warning: Failed to allocate object during unarchiving at key {:?}",
                     key
                 );
                 let host_obj = borrow_host_obj(env, unarchiver);
@@ -712,13 +751,19 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
 
             // Verify the object has a host_object after allocation
             if env.objc.get_host_object(new_object).is_none() {
-                log!("Warning: Allocated object {:?} has no host_object during unarchiving. This may cause crashes.", new_object);
+                log_dbg!(
+                    "Note: Allocated object {:?} has no host_object after alloc (class may use placeholder implementation)",
+                    new_object
+                );
             }
 
-            let new_object: id = msg![env; new_object initWithCoder:unarchiver];
-            if new_object == nil {
+            // Try to initialize the object with initWithCoder:
+            // Catch potential issues during initialization
+            let initialized_object: id = msg![env; new_object initWithCoder:unarchiver];
+            if initialized_object == nil {
                 log!(
-                    "Warning: initWithCoder returned nil during unarchiving at key {:?}",
+                    "Warning: initWithCoder: returned nil during unarchiving at key {:?}. \
+                     This may indicate missing class implementation or incompatible archive format.",
                     key
                 );
             }
@@ -726,7 +771,7 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
             let host_obj = borrow_host_obj(env, unarchiver);
             host_obj.current_key = old_current_key;
 
-            new_object
+            initialized_object
         }
         Value::String(s) => {
             let s = s.to_string();
