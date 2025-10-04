@@ -46,6 +46,20 @@ pub const MPMediaItemPropertyLastPlayedDate: &str = "lastPlayedDate";
 #[allow(dead_code)]
 pub const MPMediaItemPropertyUserGrouping: &str = "userGrouping";
 
+// iOS 3.1.3 additional properties
+#[allow(dead_code)]
+pub const MPMediaItemPropertyBookmarkTime: &str = "bookmarkTime";
+
+// Media types (NSNumber values)
+#[allow(dead_code)]
+pub const MPMediaTypeMusic: u64 = 1 << 0;
+#[allow(dead_code)]
+pub const MPMediaTypePodcast: u64 = 1 << 1;
+#[allow(dead_code)]
+pub const MPMediaTypeAudioBook: u64 = 1 << 2;
+#[allow(dead_code)]
+pub const MPMediaTypeAnyAudio: u64 = 0xFF;
+
 /// Export these constants for dyld
 pub const CONSTANTS: ConstantExports = &[
     (
