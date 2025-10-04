@@ -72,16 +72,16 @@ fn __cxa_finalize(env: &mut Environment, d: MutVoidPtr) {
 // - ARM EHABI specification
 // - Itanium C++ ABI for exception handling concepts
 fn ___objc_personality_v0(
-    env: &mut Environment,
+    _env: &mut Environment,
     state: i32,       // _Unwind_State
-    exception: u32,   // _Unwind_Exception*
-    context: u32,     // _Unwind_Context*
+    _exception: u32,   // _Unwind_Exception*
+    _context: u32,     // _Unwind_Context*
 ) -> i32 {
     log_dbg!(
         "___objc_personality_v0(state={}, exception={:#x}, context={:#x})",
         state,
-        exception,
-        context
+        _exception,
+        _context
     );
     
     // ARM EHABI states
@@ -124,7 +124,7 @@ fn ___objc_personality_v0(
 
 // Stub for dyld stub binder
 // This is called by the dynamic linker's lazy binding stubs
-fn dyld_stub_binder(env: &mut Environment) {
+fn dyld_stub_binder(_env: &mut Environment) {
     log!("Warning: dyld_stub_binder called - this should have been handled by touchHLE's dyld implementation");
     log!("  This may indicate an issue with lazy symbol resolution.");
     // In a real implementation, this would perform the symbol binding

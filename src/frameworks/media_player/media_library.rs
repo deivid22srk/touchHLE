@@ -5,7 +5,7 @@
  */
 //! `MPMediaLibrary`.
 
-use crate::objc::{id, nil, objc_classes, ClassExports};
+use crate::objc::{id, msg, nil, objc_classes, ClassExports};
 
 pub const CLASSES: ClassExports = objc_classes! {
 

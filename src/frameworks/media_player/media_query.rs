@@ -6,7 +6,7 @@
 //! `MPMediaQuery`.
 
 use crate::dyld::{ConstantExports, HostConstant};
-use crate::objc::{id, nil, objc_classes, ClassExports};
+use crate::objc::{id, msg, msg_class, nil, objc_classes, ClassExports};
 
 // MPMediaPlaylist property keys (iOS 3.1.3)
 pub const MPMediaPlaylistPropertyPersistentID: &str = "playlistPersistentID";
