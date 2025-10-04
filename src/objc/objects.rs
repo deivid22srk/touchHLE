@@ -246,6 +246,16 @@ impl super::ObjC {
     /// Get a reference to a host object and downcast it. Panics if there is
     /// no such object, or if downcasting fails.
     pub fn borrow<T: AnyHostObject + 'static>(&self, object: id) -> &T {
+        // Check for nil object first
+        if object == nil {
+            panic!(
+                "Attempted to borrow nil object as type {}. \
+                 This usually means a method received nil where it expected a valid object. \
+                 Check the caller code for proper nil validation.",
+                std::any::type_name::<T>()
+            );
+        }
+        
         let entry = self.objects.get(&object);
         if entry.is_none() {
             panic!(
@@ -279,6 +289,27 @@ impl super::ObjC {
     /// Get a reference to a host object and downcast it. Panics if there is
     /// no such object, or if downcasting fails.
     pub fn borrow_mut<T: AnyHostObject + 'static>(&mut self, object: id) -> &mut T {
+        // Check for nil object first
+        if object == nil {
+            panic!(
+                "Attempted to borrow_mut nil object as type {}. \
+                 This usually means a method received nil where it expected a valid object. \
+                 Check the caller code for proper nil validation.",
+                std::any::type_name::<T>()
+            );
+        }
+        
+        // Check if object exists before unwrapping
+        if self.objects.get(&object).is_none() {
+            panic!(
+                "No entry found for object {:?} when trying to borrow_mut as type {}. \
+                 The object may have been deallocated prematurely, never allocated, \
+                 or the pointer may be corrupted.",
+                object,
+                std::any::type_name::<T>()
+            );
+        }
+        
         // Rust's borrow checker struggles with loops like this which descend
         // through a data structure with a mutable borrow. The unsafe code is
         // used to bypass the borrow checker.

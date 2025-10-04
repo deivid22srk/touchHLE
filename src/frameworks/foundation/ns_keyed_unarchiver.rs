@@ -593,7 +593,22 @@ fn get_value_to_decode_for_key(env: &mut Environment, unarchiver: id, key: id) -
 
 fn unarchive_value_owned(env: &mut Environment, unarchiver: id, value: &Value) -> id {
     if let Some(uid) = value.as_uid().copied() {
+        // Validate UID is not zero (null)
+        if uid.get() == 0 {
+            return nil;
+        }
+        
         let object = unarchive_key(env, unarchiver, uid);
+        
+        // Check if object is valid before retaining
+        if object == nil {
+            log_dbg!(
+                "Note: unarchive_key returned nil for UID {:?}, skipping retain",
+                uid
+            );
+            return nil;
+        }
+        
         retain(env, object);
         return object;
     }
@@ -775,7 +790,14 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
         }
         Value::String(s) => {
             let s = s.to_string();
-            from_rust_string(env, s)
+            let str_obj = from_rust_string(env, s.clone());
+            if str_obj == nil {
+                log!(
+                    "Warning: Failed to create NSString during unarchive for string: {:?}",
+                    s
+                );
+            }
+            str_obj
         }
         Value::Integer(int) => {
             #[allow(clippy::clone_on_copy)]
