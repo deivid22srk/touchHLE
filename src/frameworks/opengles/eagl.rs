@@ -294,7 +294,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // it, to avoid holding borrows while calling other methods that also need
     // to borrow from `env`.
     let (mapped_buffers, bindings_to_release) = {
-        let mut host_obj = env.objc.borrow_mut::<EAGLContextHostObject>(this);
+        let host_obj = env.objc.borrow_mut::<EAGLContextHostObject>(this);
         let bindings = if Arc::strong_count(&host_obj.renderbuffer_drawable_bindings) == 1 {
             // Take the map, leaving an empty one. The lock is released here.
             Some(std::mem::take(&mut *host_obj.renderbuffer_drawable_bindings.lock().unwrap()))
