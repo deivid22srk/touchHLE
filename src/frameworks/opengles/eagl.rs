@@ -290,9 +290,9 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())dealloc {
-    // Take the bindings and buffers out of the host object before deallocating it,
-    // to avoid holding borrows while calling other methods that also need to
-    // borrow from `env`.
+    // Take the bindings and buffers out of the host object before deallocating
+    // it, to avoid holding borrows while calling other methods that also need
+    // to borrow from `env`.
     let (mapped_buffers, bindings_to_release) = {
         let mut host_obj = env.objc.borrow_mut::<EAGLContextHostObject>(this);
         let bindings = if Arc::strong_count(&host_obj.renderbuffer_drawable_bindings) == 1 {
@@ -305,7 +305,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         (std::mem::take(&mut host_obj.mapped_buffers), bindings)
     }; // The mutable borrow of `host_obj` (and `env`) ends here.
 
-    // Now we can free memory and release objects without any outstanding borrows.
+    // Now we can free memory and release objects without any outstanding
+    // borrows.
     for &(guest_buf, _host_buf) in mapped_buffers.values() {
         env.mem.free(guest_buf);
     }
