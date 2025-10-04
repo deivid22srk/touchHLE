@@ -1,10 +1,10 @@
-name: Build touchHLE
+name: Build8 touchHLE
 
 on:
   push:
-    branches: [ "trunk" ]
+    branches: [ "fix-log-race-condition" ]
   pull_request:
-    branches: [ "trunk" ]
+    branches: [ "fix-log-race-condition" ]
   workflow_dispatch:
 
 env:
