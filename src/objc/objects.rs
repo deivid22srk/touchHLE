@@ -300,7 +300,7 @@ impl super::ObjC {
         }
         
         // Check if object exists before unwrapping
-        if self.objects.get(&object).is_none() {
+        if !self.objects.contains_key(&object) {
             panic!(
                 "No entry found for object {:?} when trying to borrow_mut as type {}. \
                  The object may have been deallocated prematurely, never allocated, \
