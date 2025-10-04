@@ -99,7 +99,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     msg_class![env; NSArray array]
 }
 
-- (id)valueForProperty:(id)property { // NSString*
+- (id)valueForProperty:(id)_property { // NSString*
     log_dbg!("[MPMediaPlaylist valueForProperty:] - returning nil for all properties");
     nil
 }
