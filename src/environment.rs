@@ -285,6 +285,22 @@ impl Environment {
                 None
             };
 
+            // Read initial orientation from Info.plist if specified
+            let mut adjusted_options = options.clone();
+            if let Some(orientation_str) = bundle.initial_interface_orientation() {
+                let orientation = match orientation_str {
+                    "UIInterfaceOrientationPortrait" => window::DeviceOrientation::Portrait,
+                    "UIInterfaceOrientationLandscapeLeft" => window::DeviceOrientation::LandscapeLeft,
+                    "UIInterfaceOrientationLandscapeRight" => window::DeviceOrientation::LandscapeRight,
+                    _ => {
+                        log!("Warning: Unknown orientation '{}' in Info.plist, using default", orientation_str);
+                        options.initial_orientation
+                    }
+                };
+                log!("Using initial orientation from Info.plist: {:?}", orientation);
+                adjusted_options.initial_orientation = orientation;
+            }
+
             Some(window::Window::new(
                 &format!(
                     "{} (touchHLE {}{}{})",
@@ -299,7 +315,7 @@ impl Environment {
                 ),
                 icon.ok(),
                 launch_image,
-                &options,
+                &adjusted_options,
             ))
         };
 

@@ -29,7 +29,45 @@ fn pthread_once(
     init_routine: GuestFunction, // void (*init_routine)(void)
 ) -> i32 {
     let pthread_once_t { magic, init } = env.mem.read(once_control);
-    assert!(magic == MAGIC_ONCE);
+    
+    // Validate magic number with better error handling
+    if magic != MAGIC_ONCE {
+        log!(
+            "Warning: pthread_once_t at {:?} has invalid magic number: expected 0x{:08X}, got 0x{:08X}",
+            once_control,
+            MAGIC_ONCE,
+            magic
+        );
+        
+        // Try to initialize the structure if it appears uninitialized
+        if magic == 0 || init == 0 {
+            log!("Attempting to initialize pthread_once_t structure...");
+            let new_once = pthread_once_t {
+                magic: MAGIC_ONCE,
+                init: 0,
+            };
+            env.mem.write(once_control, new_once);
+            // Now run the init routine
+            log_dbg!(
+                "pthread_once_t at {:?} initialized and running init routine {:?}",
+                once_control,
+                init_routine
+            );
+            let final_once = pthread_once_t {
+                magic: MAGIC_ONCE,
+                init: 0xFFFFFFFF,
+            };
+            env.mem.write(once_control, final_once);
+            () = init_routine.call_from_host(env, ());
+            log_dbg!("Init routine {:?} done", init_routine);
+            return 0;
+        }
+        
+        // If magic is wrong and it doesn't look uninitialized, this is an error
+        log!("Error: pthread_once_t appears corrupted, skipping initialization");
+        return -1; // EINVAL
+    }
+    
     match init {
         0 => {
             log_dbg!(
@@ -51,7 +89,14 @@ fn pthread_once(
                 once_control
             );
         }
-        _ => panic!(),
+        _ => {
+            log!(
+                "Warning: pthread_once_t at {:?} has unexpected init value: 0x{:08X}",
+                once_control,
+                init
+            );
+            return -1;
+        }
     };
     0 // success. TODO: return an error on failure?
 }
