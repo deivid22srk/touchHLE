@@ -569,7 +569,8 @@ impl Window {
                     log!("Received app-will-resign-active event.");
                     assert!(self.high_priority_event.is_none());
                     self.high_priority_event = Some(Event::AppWillResignActive);
-                    // Mark surface as invalid to prevent EGL_BAD_SURFACE errors on Android
+                    // Mark surface as invalid to prevent EGL_BAD_SURFACE
+                    // errors on Android
                     self.surface_valid = false;
                     // For some reason, if we don't pause event polling, we will
                     // never finish handling the event.
@@ -697,8 +698,8 @@ impl Window {
                     log_dbg!("SDL TextInput {}", text);
                     Event::TextInput(TextInputEvent::Text(text))
                 }
-                // On Android, when the app returns to foreground, SDL recreates the surface.
-                // We need to mark it as valid again to resume rendering.
+                // On Android, when the app returns to foreground, SDL
+                // recreates the surface. Mark it valid to resume rendering.
                 E::Window { win_event, .. } => {
                     match win_event {
                         sdl2::event::WindowEvent::Restored | 
@@ -1135,8 +1136,9 @@ impl Window {
         // onto image so we can rotate later if necessary
     }
 
-    /// Check if the rendering surface is valid and ready for rendering operations.
-    /// Returns false when the app is paused/backgrounded on Android.
+    /// Check if the rendering surface is valid and ready for
+    /// rendering operations. Returns false when the app is
+    /// paused/backgrounded on Android.
     pub fn is_surface_valid(&self) -> bool {
         self.surface_valid
     }
@@ -1149,8 +1151,9 @@ impl Window {
         }
         
         // Check if the surface is valid before attempting swap.
-        // On Android, the surface becomes invalid when the app is paused/backgrounded,
-        // and calling gl_swap_window() on an invalid surface causes EGL_BAD_SURFACE errors.
+        // On Android, the surface becomes invalid when the app is
+        // paused/backgrounded, and calling gl_swap_window() on an
+        // invalid surface causes EGL_BAD_SURFACE errors.
         if !self.surface_valid {
             log_dbg!("Skipping swap_window() - surface is not valid (app backgrounded?)");
             return;
