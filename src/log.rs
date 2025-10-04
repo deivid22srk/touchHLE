@@ -8,19 +8,19 @@
 use std::fs::File;
 #[cfg(target_os = "android")]
 use std::os::raw::{c_char, c_int};
-use std::sync::{LazyLock, Mutex, MutexGuard};
+use std::sync::LazyLock;
 
 /// Get a handle to the log file. This is only for use by logging macros!
 ///
 /// All the logging macros print to stderr or (on Android) logcat, but this
 /// is not convenient for users who aren't accustomed to command-line tools or
 /// who don't have access to ADB, so we also write to a log file.
-pub fn get_log_file() -> MutexGuard<'static, File> {
-    static LOG_FILE: LazyLock<Mutex<File>> = LazyLock::new(|| {
-        Mutex::new(File::create(crate::paths::user_data_base_path().join("touchHLE_log.txt")).unwrap())
+pub fn get_log_file() -> &'static File {
+    static LOG_FILE: LazyLock<File> = LazyLock::new(|| {
+        File::create(crate::paths::user_data_base_path().join("touchHLE_log.txt")).unwrap()
     });
 
-    LOG_FILE.lock().unwrap()
+    &LOG_FILE
 }
 
 #[cfg(target_os = "android")]

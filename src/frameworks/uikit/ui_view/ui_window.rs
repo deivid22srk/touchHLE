@@ -120,30 +120,6 @@ pub const CLASSES: ClassExports = objc_classes! {
     () = msg![env; this setHidden:false];
 }
 
-- (())setRootViewController:(id)rootViewController {
-    // This is a stub for an iOS 4.0+ API.
-    log_dbg!("[(UIWindow*){:?} setRootViewController:{:?}] (iOS 4.0 stub)", this, rootViewController);
-
-    // A correct implementation would store the rootViewController and handle
-    // retaining the new one and releasing the old one. For now, we just
-    // manage the view hierarchy to prevent a crash.
-
-    // Remove all existing subviews from the window.
-    let subviews: id = msg![env; this subviews];
-    let subviews_to_remove: id = msg![env; subviews copy]; // copy to iterate while removing
-    let count: NSUInteger = msg![env; subviews_to_remove count];
-    for i in 0..count {
-        let view: id = msg![env; subviews_to_remove objectAtIndex:i];
-        () = msg![env; view removeFromSuperview];
-    }
-    release(env, subviews_to_remove);
-
-    if rootViewController != nil {
-        let view: id = msg![env; rootViewController view];
-        () = msg![env; this addSubview:view];
-    }
-}
-
 // UIResponder implementation
 // From the Apple UIView docs regarding [UIResponder nextResponder]:
 // "UIWindow returns the application object."

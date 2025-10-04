@@ -185,6 +185,13 @@
                         android:layout_height="wrap_content"
                         android:text="@string/fullscreen_label"
                         android:layout_marginTop="12dp" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/autoCopyErrorSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/auto_copy_error_label"
+                        android:layout_marginTop="12dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

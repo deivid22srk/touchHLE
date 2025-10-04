@@ -16,6 +16,7 @@ public class SettingsActivity extends AppCompatActivity {
     private SwitchMaterial analogSwitch;
     private SwitchMaterial networkSwitch;
     private SwitchMaterial fullscreenSwitch;
+    private SwitchMaterial autoCopyErrorSwitch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +35,7 @@ public class SettingsActivity extends AppCompatActivity {
         analogSwitch = findViewById(R.id.analogStickSwitch);
         networkSwitch = findViewById(R.id.networkSwitch);
         fullscreenSwitch = findViewById(R.id.fullscreenSwitch);
+        autoCopyErrorSwitch = findViewById(R.id.autoCopyErrorSwitch);
         MaterialButton saveButton = findViewById(R.id.saveButton);
 
         applySavedValues();
@@ -51,6 +53,7 @@ public class SettingsActivity extends AppCompatActivity {
         analogSwitch.setChecked(SettingsManager.getAnalog(this));
         networkSwitch.setChecked(SettingsManager.getNetwork(this));
         fullscreenSwitch.setChecked(SettingsManager.getFullscreen(this));
+        autoCopyErrorSwitch.setChecked(SettingsManager.getAutoCopyError(this));
     }
 
     private void checkScaleHack(int value) {
@@ -87,8 +90,9 @@ public class SettingsActivity extends AppCompatActivity {
         boolean analog = analogSwitch.isChecked();
         boolean network = networkSwitch.isChecked();
         boolean fullscreen = fullscreenSwitch.isChecked();
+        boolean autoCopyError = autoCopyErrorSwitch.isChecked();
 
-        SettingsManager.saveAll(this, scaleHack, orientation, analog, network, fullscreen);
+        SettingsManager.saveAll(this, scaleHack, orientation, analog, network, fullscreen, autoCopyError);
         finish();
     }
 
@@ -123,6 +127,7 @@ public class SettingsActivity extends AppCompatActivity {
         analogSwitch.setOnCheckedChangeListener(switchListener);
         networkSwitch.setOnCheckedChangeListener(switchListener);
         fullscreenSwitch.setOnCheckedChangeListener(switchListener);
+        autoCopyErrorSwitch.setOnCheckedChangeListener(switchListener);
         scaleHackGroup.setOnCheckedChangeListener(radioListener);
         orientationGroup.setOnCheckedChangeListener(radioListener);
     }
@@ -133,7 +138,8 @@ public class SettingsActivity extends AppCompatActivity {
         boolean analog = analogSwitch.isChecked();
         boolean network = networkSwitch.isChecked();
         boolean fullscreen = fullscreenSwitch.isChecked();
+        boolean autoCopyError = autoCopyErrorSwitch.isChecked();
 
-        SettingsManager.saveAll(this, scaleHack, orientation, analog, network, fullscreen);
+        SettingsManager.saveAll(this, scaleHack, orientation, analog, network, fullscreen, autoCopyError);
     }
 }

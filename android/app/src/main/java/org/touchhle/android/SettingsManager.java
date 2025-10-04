@@ -23,6 +23,7 @@ public final class SettingsManager {
     private static final String KEY_ANALOG = "analog";
     private static final String KEY_NETWORK = "network";
     private static final String KEY_FULLSCREEN = "fullscreen";
+    private static final String KEY_AUTO_COPY_ERROR = "auto_copy_error";
 
     private SettingsManager() {
     }
@@ -51,13 +52,18 @@ public final class SettingsManager {
         return prefs(context).getBoolean(KEY_FULLSCREEN, false);
     }
 
-    public static void saveAll(Context context, int scale, int orientation, boolean analog, boolean network, boolean fullscreen) {
+    public static boolean getAutoCopyError(Context context) {
+        return prefs(context).getBoolean(KEY_AUTO_COPY_ERROR, false);
+    }
+
+    public static void saveAll(Context context, int scale, int orientation, boolean analog, boolean network, boolean fullscreen, boolean autoCopyError) {
         prefs(context).edit()
                 .putInt(KEY_SCALE_HACK, scale)
                 .putInt(KEY_ORIENTATION, orientation)
                 .putBoolean(KEY_ANALOG, analog)
                 .putBoolean(KEY_NETWORK, network)
                 .putBoolean(KEY_FULLSCREEN, fullscreen)
+                .putBoolean(KEY_AUTO_COPY_ERROR, autoCopyError)
                 .apply();
     }
 
