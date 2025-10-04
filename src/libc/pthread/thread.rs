@@ -324,7 +324,12 @@ fn pthread_kill(_env: &mut Environment, _thread: pthread_t, _sig: i32) -> i32 {
     0 // success
 }
 
-fn pthread_sigmask(_env: &mut Environment, _how: i32, _set: ConstVoidPtr, _oldset: MutVoidPtr) -> i32 {
+fn pthread_sigmask(
+    _env: &mut Environment,
+    _how: i32,
+    _set: ConstVoidPtr,
+    _oldset: MutVoidPtr,
+) -> i32 {
     // TODO: implement proper signal mask handling
     log!("TODO: pthread_sigmask() called");
     0 // success

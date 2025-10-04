@@ -69,11 +69,11 @@ fn pthread_key_delete(env: &mut Environment, key: pthread_key_t) -> i32 {
         },
         None => return crate::libc::errno::EINVAL,
     };
-    
+
     if idx >= get_state(env).keys.len() {
         return crate::libc::errno::EINVAL;
     }
-    
+
     // Clear the key data
     get_state(env).keys[idx].0.clear();
     0 // success
