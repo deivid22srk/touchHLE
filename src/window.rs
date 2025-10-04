@@ -1136,13 +1136,6 @@ impl Window {
         // onto image so we can rotate later if necessary
     }
 
-    /// Check if the rendering surface is valid and ready for
-    /// rendering operations. Returns false when the app is
-    /// paused/backgrounded on Android.
-    pub fn is_surface_valid(&self) -> bool {
-        self.surface_valid
-    }
-
     /// Swap front-buffer and back-buffer so the result of OpenGL rendering is
     /// presented.
     pub fn swap_window(&self) {
