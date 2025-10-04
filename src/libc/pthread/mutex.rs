@@ -81,6 +81,17 @@ fn pthread_mutexattr_settype(
     env.mem.write(attr, attr_copy);
     0 // success
 }
+
+fn pthread_mutexattr_gettype(
+    env: &mut Environment,
+    attr: MutPtr<pthread_mutexattr_t>,
+    type_ptr: MutPtr<i32>,
+) -> i32 {
+    check_magic!(env, attr, MAGIC_MUTEXATTR);
+    let attr_data = env.mem.read(attr);
+    env.mem.write(type_ptr, attr_data.type_);
+    0 // success
+}
 fn pthread_mutexattr_destroy(env: &mut Environment, attr: MutPtr<pthread_mutexattr_t>) -> i32 {
     check_magic!(env, attr, MAGIC_MUTEXATTR);
     env.mem.write(
@@ -211,6 +222,7 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(pthread_mutexattr_init(_)),
     export_c_func!(pthread_mutexattr_setpshared(_, _)),
     export_c_func!(pthread_mutexattr_settype(_, _)),
+    export_c_func!(pthread_mutexattr_gettype(_, _)),
     export_c_func!(pthread_mutexattr_destroy(_)),
     export_c_func!(pthread_mutex_init(_, _)),
     export_c_func!(pthread_mutex_lock(_)),

@@ -340,6 +340,17 @@ forUndefinedKey:(id)key { // NSString*
             return;
         }
     }
+    // Game-specific hack for COD Zombies
+    if env.bundle.bundle_identifier().starts_with("com.activision.callofduty") && wait {
+        log!("Applying game-specific hack for COD Zombies: performing performSelectorOnMainThread:SEL({}) waitUntilDone:true on thread {}", sel.as_str(&env.mem), env.current_thread);
+        if sel.as_str(&env.mem).ends_with(':') {
+            () = msg_send(env, (this, sel, arg));
+        } else {
+            assert!(arg.is_null());
+            () = msg_send(env, (this, sel));
+        }
+        return;
+    }
     // TODO: support waiting
     // This would require tail calls for message send or a switch to async model
     assert!(!wait);

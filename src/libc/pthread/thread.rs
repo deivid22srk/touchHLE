@@ -119,6 +119,30 @@ pub fn pthread_attr_setstacksize(
     env.mem.write(attr, attr_copy);
     0 // success
 }
+
+fn pthread_attr_getdetachstate(
+    env: &mut Environment,
+    attr: MutPtr<pthread_attr_t>,
+    detachstate: MutPtr<DetachState>,
+) -> i32 {
+    if attr.is_null() {
+        return EINVAL;
+    }
+    check_magic!(env, attr, MAGIC_ATTR);
+    let attr_data = env.mem.read(attr);
+    env.mem.write(detachstate, attr_data.detachstate);
+    0 // success
+}
+
+fn pthread_attr_setscope(
+    _env: &mut Environment,
+    _attr: MutPtr<pthread_attr_t>,
+    _scope: i32,
+) -> i32 {
+    // TODO: implement proper scope handling
+    log_dbg!("TODO: pthread_attr_setscope called, returning success");
+    0 // success
+}
 fn pthread_attr_destroy(env: &mut Environment, attr: MutPtr<pthread_attr_t>) -> i32 {
     check_magic!(env, attr, MAGIC_ATTR);
     env.mem.write(
@@ -288,6 +312,24 @@ fn pthread_testcancel(_env: &mut Environment) {
     log!("TODO: pthread_testcancel()");
 }
 
+fn pthread_exit(_env: &mut Environment, _value_ptr: MutVoidPtr) {
+    // TODO: implement proper pthread_exit
+    // For now, we'll just log it
+    log!("TODO: pthread_exit() called, thread will exit normally");
+}
+
+fn pthread_kill(_env: &mut Environment, _thread: pthread_t, _sig: i32) -> i32 {
+    // TODO: implement proper signal handling
+    log!("TODO: pthread_kill() called");
+    0 // success
+}
+
+fn pthread_sigmask(_env: &mut Environment, _how: i32, _set: ConstVoidPtr, _oldset: MutVoidPtr) -> i32 {
+    // TODO: implement proper signal mask handling
+    log!("TODO: pthread_sigmask() called");
+    0 // success
+}
+
 #[allow(non_camel_case_types)]
 type mach_port_t = u32;
 
@@ -331,8 +373,10 @@ fn pthread_setschedparam(
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(pthread_attr_init(_)),
     export_c_func!(pthread_attr_setdetachstate(_, _)),
+    export_c_func!(pthread_attr_getdetachstate(_, _)),
     export_c_func!(pthread_attr_getstacksize(_, _)),
     export_c_func!(pthread_attr_setstacksize(_, _)),
+    export_c_func!(pthread_attr_setscope(_, _)),
     export_c_func!(pthread_attr_destroy(_)),
     export_c_func!(pthread_create(_, _, _, _)),
     export_c_func!(pthread_equal(_, _)),
@@ -341,6 +385,9 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(pthread_detach(_)),
     export_c_func!(pthread_setcanceltype(_, _)),
     export_c_func!(pthread_testcancel()),
+    export_c_func!(pthread_exit(_)),
+    export_c_func!(pthread_kill(_, _)),
+    export_c_func!(pthread_sigmask(_, _, _)),
     export_c_func!(pthread_mach_thread_np(_)),
     export_c_func!(pthread_getschedparam(_, _, _)),
     export_c_func!(pthread_setschedparam(_, _, _)),
