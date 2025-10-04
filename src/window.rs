@@ -702,9 +702,9 @@ impl Window {
                 // recreates the surface. Mark it valid to resume rendering.
                 E::Window { win_event, .. } => {
                     match win_event {
-                        sdl2::event::WindowEvent::Restored | 
-                        sdl2::event::WindowEvent::Exposed |
-                        sdl2::event::WindowEvent::FocusGained => {
+                        sdl2::event::WindowEvent::Restored
+                        | sdl2::event::WindowEvent::Exposed
+                        | sdl2::event::WindowEvent::FocusGained => {
                             if !self.surface_valid {
                                 log!("Surface restored, resuming rendering.");
                                 self.surface_valid = true;
@@ -1142,7 +1142,7 @@ impl Window {
         if let Ok(mut counter) = fps_counter().lock() {
             counter.record_frame();
         }
-        
+
         // Check if the surface is valid before attempting swap.
         // On Android, the surface becomes invalid when the app is
         // paused/backgrounded, and calling gl_swap_window() on an
@@ -1151,7 +1151,7 @@ impl Window {
             log_dbg!("Skipping swap_window() - surface is not valid (app backgrounded?)");
             return;
         }
-        
+
         self.window.gl_swap_window();
     }
 

@@ -130,14 +130,14 @@ impl BundleData {
         if path.is_dir() {
             return Self::open_host_dir(path);
         }
-        
+
         #[cfg(target_family = "unix")]
         if let Some(fd) = Self::fd_from_proc_path(path) {
             if let Ok(bundle) = unsafe { Self::open_ipa_from_fd(fd) } {
                 return Ok(bundle);
             }
         }
-        
+
         if let Ok(bundle) = Self::open_ipa(path) {
             return Ok(bundle);
         }

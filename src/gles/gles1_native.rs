@@ -589,7 +589,11 @@ impl GLES for GLES1Native {
         // Some drivers return GL_INVALID_ENUM if TEX_ENV_MODE is set via fv.
         // Route to TexEnvi with the enumerant value to improve compatibility.
         if pname == gles11::TEXTURE_ENV_MODE {
-            let val = if !params.is_null() { *params as GLint } else { 0 };
+            let val = if !params.is_null() {
+                *params as GLint
+            } else {
+                0
+            };
             gles11::TexEnvi(target, pname, val);
             return;
         }
