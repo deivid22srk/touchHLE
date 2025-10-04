@@ -1,10 +1,10 @@
-name: Bu9ild touchHLE
+name: Build touchHLE
 
 on:
   push:
-    branches: [ "fix-log-race-condition" ]
+    branches: [ "trunk" ]
   pull_request:
-    branches: [ "fix-log-race-condition" ]
+    branches: [ "trunk" ]
   workflow_dispatch:
 
 env:
