@@ -20,7 +20,6 @@ use crate::mem::MutPtr;
 use crate::objc::{id, msg, nil, objc_classes, release, retain, ClassExports, HostObject};
 use crate::options::Options;
 use crate::window::Window;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -291,16 +290,32 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())dealloc {
-    let host_obj = env.objc.borrow_mut::<EAGLContextHostObject>(this);
-    for &(guest_buf, _host_buf) in host_obj.mapped_buffers.values() {
+    // Take the bindings and buffers out of the host object before deallocating it,
+    // to avoid holding borrows while calling other methods that also need to
+    // borrow from `env`.
+    let (mapped_buffers, bindings_to_release) = {
+        let mut host_obj = env.objc.borrow_mut::<EAGLContextHostObject>(this);
+        let bindings = if Arc::strong_count(&host_obj.renderbuffer_drawable_bindings) == 1 {
+            // Take the map, leaving an empty one. The lock is released here.
+            Some(std::mem::take(&mut *host_obj.renderbuffer_drawable_bindings.lock().unwrap()))
+        } else {
+            None
+        };
+        // Take the mapped buffers, leaving an empty one.
+        (std::mem::take(&mut host_obj.mapped_buffers), bindings)
+    }; // The mutable borrow of `host_obj` (and `env`) ends here.
+
+    // Now we can free memory and release objects without any outstanding borrows.
+    for &(guest_buf, _host_buf) in mapped_buffers.values() {
         env.mem.free(guest_buf);
     }
-    if Arc::strong_count(&host_obj.renderbuffer_drawable_bindings) == 1 {
-        let mut bindings = host_obj.renderbuffer_drawable_bindings.lock().unwrap();
-        for (_renderbuffer, drawable) in std::mem::take(&mut *bindings) {
+
+    if let Some(bindings) = bindings_to_release {
+        for (_renderbuffer, drawable) in bindings {
             release(env, drawable);
         }
     }
+
     env.objc.dealloc_object(this, &mut env.mem);
 }
 
