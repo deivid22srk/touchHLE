@@ -40,7 +40,7 @@ fn pthread_once(
         );
         
         // Try to initialize the structure if it appears uninitialized
-        if magic == 0 || init == 0 {
+        if magic == 0 && init == 0 {
             log!("Attempting to initialize pthread_once_t structure...");
             let new_once = pthread_once_t {
                 magic: MAGIC_ONCE,
@@ -53,13 +53,13 @@ fn pthread_once(
                 once_control,
                 init_routine
             );
+            () = init_routine.call_from_host(env, ());
+            log_dbg!("Init routine {:?} done", init_routine);
             let final_once = pthread_once_t {
                 magic: MAGIC_ONCE,
                 init: 0xFFFFFFFF,
             };
             env.mem.write(once_control, final_once);
-            () = init_routine.call_from_host(env, ());
-            log_dbg!("Init routine {:?} done", init_routine);
             return 0;
         }
         
@@ -75,13 +75,13 @@ fn pthread_once(
                 once_control,
                 init_routine
             );
+            () = init_routine.call_from_host(env, ());
+            log_dbg!("Init routine {:?} done", init_routine);
             let new_once = pthread_once_t {
                 magic,
                 init: 0xFFFFFFFF,
             };
             env.mem.write(once_control, new_once);
-            () = init_routine.call_from_host(env, ());
-            log_dbg!("Init routine {:?} done", init_routine);
         }
         0xFFFFFFFF => {
             log_dbg!(
