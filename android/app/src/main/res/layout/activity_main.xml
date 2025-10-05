@@ -10,56 +10,61 @@
         android:id="@+id/mainContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <!-- Performance overlay will be added here programmatically -->
+        <!-- SDL surface and performance overlay will be added here programmatically -->
     </FrameLayout>
 
-    <!-- Navigation drawer -->
+    <!-- Navigation drawer with Material 3 style -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigationView"
-        android:layout_width="280dp"
+        android:layout_width="320dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="?attr/colorSurface"
-        android:fitsSystemWindows="true">
+        android:fitsSystemWindows="true"
+        style="@style/Widget.Material3.NavigationView">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="20dp">
 
+            <!-- Header -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                android:paddingTop="16dp"
+                android:paddingTop="20dp"
                 android:text="@string/game_menu"
-                android:textAppearance="?android:attr/textAppearanceLarge"
-                android:textColor="?attr/colorOnSurface"
-                android:textStyle="bold" />
+                android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                android:textColor="?attr/colorOnSurface" />
 
+            <!-- Performance Monitor Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                style="@style/Widget.Material3.CardView.Filled">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
+                        android:layout_marginBottom="16dp"
                         android:text="@string/performance_monitor"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textStyle="bold" />
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textColor="?attr/colorOnSurface" />
 
+                    <!-- FPS Switch -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -80,22 +85,24 @@
                             android:layout_marginStart="16dp"
                             android:layout_weight="1"
                             android:text="@string/show_fps"
-                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                             android:textColor="?attr/colorOnSurface" />
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/fpsSwitch"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="wrap_content"
+                            style="@style/Widget.Material3.CompoundButton.MaterialSwitch" />
 
                     </LinearLayout>
 
-                    <View
+                    <com.google.android.material.divider.MaterialDivider
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:layout_marginVertical="8dp"
-                        android:background="?android:attr/dividerHorizontal" />
+                        app:dividerColor="?attr/colorOutlineVariant" />
 
+                    <!-- RAM Switch -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -116,13 +123,14 @@
                             android:layout_marginStart="16dp"
                             android:layout_weight="1"
                             android:text="@string/show_ram"
-                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                             android:textColor="?attr/colorOnSurface" />
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/ramSwitch"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="wrap_content"
+                            style="@style/Widget.Material3.CompoundButton.MaterialSwitch" />
 
                     </LinearLayout>
 
@@ -130,23 +138,32 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Description -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="32dp"
                 android:text="@string/performance_description"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="?android:attr/textColorSecondary" />
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Exit Game Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/exitGameButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:text="@string/exit_game"
                 android:textColor="?attr/colorOnError"
                 app:backgroundTint="?attr/colorError"
                 app:icon="@android:drawable/ic_menu_close_clear_cancel"
-                app:iconGravity="start" />
+                app:iconGravity="start"
+                app:cornerRadius="16dp"
+                style="@style/Widget.Material3.Button" />
 
         </LinearLayout>
 
