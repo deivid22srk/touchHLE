@@ -7,9 +7,11 @@
 
 pub mod ui_text_view;
 use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
+use crate::frameworks::foundation::ns_string::get_static_str;
 use crate::frameworks::foundation::NSInteger;
 use crate::objc::{
-    id, impl_HostObject_with_superclass, msg, nil, objc_classes, ClassExports, NSZonePtr, SEL,
+    id, impl_HostObject_with_superclass, msg, msg_super, nil, objc_classes, ClassExports,
+    NSZonePtr, SEL,
 };
 
 type UIScrollViewIndicatorStyle = NSInteger;
@@ -47,6 +49,49 @@ pub const CLASSES: ClassExports = objc_classes! {
 + (id)allocWithZone:(NSZonePtr)_zone {
     let host_object = Box::<UIScrollViewHostObject>::default();
     env.objc.alloc_object(this, host_object, &mut env.mem)
+}
+
+// NSCoding implementation
+- (id)initWithCoder:(id)coder {
+    let this: id = msg_super![env; this initWithCoder:coder];
+
+    // Decode content size
+    let content_size_key = get_static_str(env, "UIContentSize");
+    let content_size_str: id = msg![env; coder decodeObjectForKey:content_size_key];
+    if content_size_str != nil {
+        let content_size: CGSize = msg![env; content_size_str CGSizeValue];
+        () = msg![env; this setContentSize:content_size];
+    }
+
+    // Decode content offset
+    let content_offset_key = get_static_str(env, "UIContentOffset");
+    let content_offset_str: id = msg![env; coder decodeObjectForKey:content_offset_key];
+    if content_offset_str != nil {
+        let content_offset: CGPoint = msg![env; content_offset_str CGPointValue];
+        () = msg![env; this setContentOffset:content_offset];
+    }
+
+    // Decode scroll enabled
+    let scroll_enabled_key = get_static_str(env, "UIScrollDisabled");
+    let scroll_disabled: bool = msg![env; coder decodeBoolForKey:scroll_enabled_key];
+    let scroll_enabled = !scroll_disabled;
+    () = msg![env; this setScrollEnabled:scroll_enabled];
+
+    // Decode bounces property
+    let bounces_key = get_static_str(env, "UIBounces");
+    if msg![env; coder containsValueForKey:bounces_key] {
+        let _bounces: bool = msg![env; coder decodeBoolForKey:bounces_key];
+        // TODO: Store and use bounces property
+    }
+
+    // Decode indicator style
+    let indicator_style_key = get_static_str(env, "UIIndicatorStyle");
+    if msg![env; coder containsValueForKey:indicator_style_key] {
+        let indicator_style: UIScrollViewIndicatorStyle = msg![env; coder decodeIntForKey:indicator_style_key];
+        () = msg![env; this setIndicatorStyle:indicator_style];
+    }
+
+    this
 }
 
 - (id)delegate {

@@ -26,9 +26,10 @@ use std::env;
 use std::f32::consts::FRAC_PI_2;
 use std::num::NonZeroU32;
 use std::ptr::null_mut;
+use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum DeviceOrientation {
     Portrait,
     LandscapeLeft,
@@ -79,6 +80,47 @@ pub enum FingerId {
 }
 pub type Coords = (f32, f32);
 
+struct FpsCounter {
+    frame_count: u64,
+    last_update: Instant,
+    current_fps: u32,
+}
+
+impl FpsCounter {
+    fn new() -> Self {
+        FpsCounter {
+            frame_count: 0,
+            last_update: Instant::now(),
+            current_fps: 0,
+        }
+    }
+
+    fn record_frame(&mut self) {
+        self.frame_count += 1;
+        let now = Instant::now();
+        let elapsed = now.duration_since(self.last_update);
+
+        if elapsed >= Duration::from_secs(1) {
+            self.current_fps = (self.frame_count as f64 / elapsed.as_secs_f64()) as u32;
+            self.frame_count = 0;
+            self.last_update = now;
+        }
+    }
+
+    fn get_fps(&self) -> u32 {
+        self.current_fps
+    }
+}
+
+fn fps_counter() -> &'static Mutex<FpsCounter> {
+    static COUNTER: OnceLock<Mutex<FpsCounter>> = OnceLock::new();
+    COUNTER.get_or_init(|| Mutex::new(FpsCounter::new()))
+}
+
+pub fn get_current_fps() -> u32 {
+    fps_counter().lock().map(|c| c.get_fps()).unwrap_or(0)
+}
+
 #[derive(Debug)]
 pub enum TextInputEvent {
     Text(String),
@@ -114,10 +156,9 @@ pub enum BatteryState {
 }
 
 pub enum GLVersion {
-    /// OpenGL ES 1.1
     GLES11,
-    /// OpenGL 2.1 compatibility profile
     GL21Compat,
+    GLES20,
 }
 
 pub struct GLContext(sdl2::video::GLContext);
@@ -173,6 +214,9 @@ pub struct Window {
     virtual_cursor_last: Option<(f32, f32, bool, bool)>,
     virtual_cursor_last_unsticky: Option<(f32, f32, Instant)>,
     virtual_accelerometer_last: Option<(f32, f32, bool)>,
+    /// Tracks whether the rendering surface is valid and ready for rendering.
+    /// On Android, this prevents crashes when the app is paused/backgrounded.
+    surface_valid: bool,
 }
 impl Window {
     /// Returns [true] if touchHLE is running on a device where we should always
@@ -312,6 +356,7 @@ impl Window {
             virtual_cursor_last: None,
             virtual_cursor_last_unsticky: None,
             virtual_accelerometer_last: None,
+            surface_valid: true,
         };
 
         // Set up OpenGL ES context used for splash screen and app UI rendering
@@ -524,6 +569,9 @@ impl Window {
                     log!("Received app-will-resign-active event.");
                     assert!(self.high_priority_event.is_none());
                     self.high_priority_event = Some(Event::AppWillResignActive);
+                    // Mark surface as invalid to prevent EGL_BAD_SURFACE
+                    // errors on Android
+                    self.surface_valid = false;
                     // For some reason, if we don't pause event polling, we will
                     // never finish handling the event.
                     // TODO: Add a mechanism for re-enabling polling, if at some
@@ -649,6 +697,22 @@ impl Window {
                 E::TextInput { text, .. } => {
                     log_dbg!("SDL TextInput {}", text);
                     Event::TextInput(TextInputEvent::Text(text))
+                }
+                // On Android, when the app returns to foreground, SDL
+                // recreates the surface. Mark it valid to resume rendering.
+                E::Window { win_event, .. } => {
+                    match win_event {
+                        sdl2::event::WindowEvent::Restored
+                        | sdl2::event::WindowEvent::Exposed
+                        | sdl2::event::WindowEvent::FocusGained => {
+                            if !self.surface_valid {
+                                log!("Surface restored, resuming rendering.");
+                                self.surface_valid = true;
+                            }
+                        }
+                        _ => {}
+                    }
+                    continue;
                 }
                 _ => continue,
             })
@@ -964,6 +1028,10 @@ impl Window {
                 attr.set_context_version(2, 1);
                 attr.set_context_profile(sdl2::video::GLProfile::Compatibility);
             }
+            GLVersion::GLES20 => {
+                attr.set_context_version(2, 0);
+                attr.set_context_profile(sdl2::video::GLProfile::GLES);
+            }
         }
 
         let gl_ctx = self.window.gl_create_context()?;
@@ -1061,7 +1129,8 @@ impl Window {
             gl_ctx.DeleteTextures(1, &texture);
         };
 
-        self.window.gl_swap_window();
+        // Use the public swap_window method which checks surface validity
+        self.swap_window();
 
         // hold onto GL context so the image doesn't disappear, and hold
         // onto image so we can rotate later if necessary
@@ -1070,6 +1139,19 @@ impl Window {
     /// Swap front-buffer and back-buffer so the result of OpenGL rendering is
     /// presented.
     pub fn swap_window(&self) {
+        if let Ok(mut counter) = fps_counter().lock() {
+            counter.record_frame();
+        }
+
+        // Check if the surface is valid before attempting swap.
+        // On Android, the surface becomes invalid when the app is
+        // paused/backgrounded, and calling gl_swap_window() on an
+        // invalid surface causes EGL_BAD_SURFACE errors.
+        if !self.surface_valid {
+            log_dbg!("Skipping swap_window() - surface is not valid (app backgrounded?)");
+            return;
+        }
+
         self.window.gl_swap_window();
     }
 
@@ -1171,6 +1253,10 @@ impl Window {
         }
 
         let (screen_width, screen_height) = self.window.drawable_size();
+
+        if Self::rotatable_fullscreen() && self.fullscreen {
+            return (0, 0, screen_width, screen_height);
+        }
 
         let app_aspect = app_width as f32 / app_height as f32;
         let screen_aspect = screen_width as f32 / screen_height as f32;

@@ -90,6 +90,7 @@ pub const FUNCTION_LISTS: &[super::FunctionExports] = &[
     core_graphics::cg_image::FUNCTIONS,
     dnssd::FUNCTIONS,
     foundation::FUNCTIONS,
+    foundation::ns_block::FUNCTIONS,
     foundation::ns_exception::FUNCTIONS,
     foundation::ns_file_manager::FUNCTIONS,
     foundation::ns_log::FUNCTIONS,

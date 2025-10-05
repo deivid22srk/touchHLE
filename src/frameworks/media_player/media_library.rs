@@ -5,7 +5,10 @@
  */
 //! `MPMediaLibrary`.
 
-use crate::objc::{id, nil, objc_classes, ClassExports};
+use crate::objc::{id, msg, nil, objc_classes, ClassExports, HostObject};
+
+struct MPMediaLibraryHostObject;
+impl HostObject for MPMediaLibraryHostObject {}
 
 pub const CLASSES: ClassExports = objc_classes! {
 
@@ -14,8 +17,23 @@ pub const CLASSES: ClassExports = objc_classes! {
 @implementation MPMediaLibrary: NSObject
 
 + (id)defaultMediaLibrary {
-    log!("TODO: [MPMediaLibrary defaultMediaLibrary] (not implemented yet)");
-    nil
+    log_dbg!("[MPMediaLibrary defaultMediaLibrary] - creating stub media library");
+    
+    let library: id = msg![env; this alloc];
+    if library != nil {
+        msg![env; library init]
+    } else {
+        nil
+    }
+}
+
++ (id)alloc {
+    let host_object = Box::new(MPMediaLibraryHostObject);
+    env.objc.alloc_object(this, host_object, &mut env.mem)
+}
+
+- (id)init {
+    this
 }
 
 @end

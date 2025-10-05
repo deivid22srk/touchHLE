@@ -10,6 +10,7 @@ use crate::frameworks::core_graphics::cg_image::{
     self, CGImageGetHeight, CGImageGetWidth, CGImageRef, CGImageRelease, CGImageRetain,
 };
 use crate::frameworks::core_graphics::{CGFloat, CGPoint, CGRect, CGSize};
+use crate::frameworks::foundation::ns_string::get_static_str;
 use crate::frameworks::foundation::{ns_data, ns_string, NSInteger};
 use crate::frameworks::uikit::ui_graphics::UIGraphicsGetCurrentContext;
 use crate::fs::GuestPath;
@@ -135,6 +136,41 @@ pub const CLASSES: ClassExports = objc_classes! {
     let image = Image::from_bytes(slice).unwrap();
     let cg_image = cg_image::from_image(env, image);
     env.objc.borrow_mut::<UIImageHostObject>(this).cg_image = cg_image;
+    this
+}
+
+// NSCoding implementation
+- (id)initWithCoder:(id)coder {
+    // UIImage in NIBs is typically encoded as a resource name or data
+    // Try to decode UIResourceName first (most common in NIBs)
+    let resource_name_key = get_static_str(env, "UIResourceName");
+    let resource_name: id = msg![env; coder decodeObjectForKey:resource_name_key];
+
+    if resource_name != nil {
+        // Load image by name (uses cache)
+        let image: id = msg_class![env; UIImage imageNamed:resource_name];
+        if image != nil {
+            let cg_image: CGImageRef = msg![env; image CGImage];
+            CGImageRetain(env, cg_image);
+            env.objc.borrow_mut::<UIImageHostObject>(this).cg_image = cg_image;
+            return this;
+        }
+    }
+
+    // Try to decode UIImageData (embedded image data)
+    let image_data_key = get_static_str(env, "UIImageData");
+    let image_data: id = msg![env; coder decodeObjectForKey:image_data_key];
+
+    if image_data != nil {
+        let slice = ns_data::to_rust_slice(env, image_data);
+        if let Ok(image) = Image::from_bytes(slice) {
+            let cg_image = cg_image::from_image(env, image);
+            env.objc.borrow_mut::<UIImageHostObject>(this).cg_image = cg_image;
+            return this;
+        }
+    }
+
+    log!("Warning: UIImage initWithCoder: could not decode image");
     this
 }
 

@@ -180,4 +180,25 @@ impl Bundle {
             .get("NSMainNibFile")
             .map(|v| v.as_string().unwrap())
     }
+
+    /// Get the initial interface orientation from Info.plist.
+    /// Returns the orientation specified by UIInterfaceOrientation or the first
+    /// orientation from UISupportedInterfaceOrientations array.
+    pub fn initial_interface_orientation(&self) -> Option<&str> {
+        // Try UIInterfaceOrientation first (single value)
+        if let Some(orientation) = self.plist.get("UIInterfaceOrientation") {
+            return orientation.as_string();
+        }
+        
+        // Try UISupportedInterfaceOrientations (array)
+        if let Some(orientations) = self.plist.get("UISupportedInterfaceOrientations") {
+            if let Some(array) = orientations.as_array() {
+                if let Some(first) = array.first() {
+                    return first.as_string();
+                }
+            }
+        }
+        
+        None
+    }
 }

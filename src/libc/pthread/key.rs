@@ -58,8 +58,30 @@ fn pthread_setspecific(env: &mut Environment, key: pthread_key_t, value: ConstVo
     0 // success
 }
 
+fn pthread_key_delete(env: &mut Environment, key: pthread_key_t) -> i32 {
+    // TODO: implement proper key deletion
+    // For now, we'll just log it
+    log_dbg!("TODO: pthread_key_delete({}) called", key);
+    let idx: usize = match key.checked_sub(1) {
+        Some(i) => match i.try_into() {
+            Ok(idx) => idx,
+            Err(_) => return crate::libc::errno::EINVAL,
+        },
+        None => return crate::libc::errno::EINVAL,
+    };
+
+    if idx >= get_state(env).keys.len() {
+        return crate::libc::errno::EINVAL;
+    }
+
+    // Clear the key data
+    get_state(env).keys[idx].0.clear();
+    0 // success
+}
+
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(pthread_key_create(_, _)),
     export_c_func!(pthread_getspecific(_)),
     export_c_func!(pthread_setspecific(_, _)),
+    export_c_func!(pthread_key_delete(_)),
 ];

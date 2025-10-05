@@ -6,6 +6,8 @@
 //! Logging and terminal output macros.
 
 use std::fs::File;
+#[cfg(target_os = "android")]
+use std::os::raw::{c_char, c_int};
 use std::sync::LazyLock;
 
 /// Get a handle to the log file. This is only for use by logging macros!
@@ -19,6 +21,32 @@ pub fn get_log_file() -> &'static File {
     });
 
     &LOG_FILE
+}
+
+#[cfg(target_os = "android")]
+pub(crate) fn log_to_logcat(message: &str) {
+    use std::borrow::Cow;
+    use std::ffi::CString;
+
+    const ANDROID_LOG_INFO: c_int = 4;
+    static TAG: LazyLock<CString> = LazyLock::new(|| CString::new("touchHLE").unwrap());
+
+    let sanitized: Cow<'_, str> = if message.contains('\0') {
+        Cow::Owned(message.replace('\0', "\u{fffd}"))
+    } else {
+        Cow::Borrowed(message)
+    };
+
+    if let Ok(c_message) = CString::new(sanitized.as_ref()) {
+        unsafe {
+            __android_log_write(ANDROID_LOG_INFO, TAG.as_ptr(), c_message.as_ptr());
+        }
+    }
+}
+
+#[cfg(target_os = "android")]
+extern "C" {
+    fn __android_log_write(prio: c_int, tag: *const c_char, text: *const c_char) -> c_int;
 }
 
 /// Prints a log message unconditionally. Use this for errors or warnings.
@@ -65,7 +93,7 @@ macro_rules! echo {
 
             #[cfg(target_os = "android")]
             {
-                sdl2::log::log(&formatted_str);
+                $crate::log::log_to_logcat(&formatted_str);
             }
             #[cfg(not(target_os = "android"))]
             eprintln!("{}", formatted_str);
@@ -80,7 +108,7 @@ macro_rules! echo {
         {
             #[cfg(target_os = "android")]
             {
-                sdl2::log::log("");
+                $crate::log::log_to_logcat("");
             }
             #[cfg(not(target_os = "android"))]
             eprintln!("");

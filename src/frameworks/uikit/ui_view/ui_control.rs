@@ -9,12 +9,14 @@
 //! - The [Target-Action section](https://developer.apple.com/library/archive/documentation/General/Conceptual/CocoaEncyclopedia/Target-Action/Target-Action.html) of Apple's "Concepts in Objective-C Programming".
 
 pub mod ui_button;
+pub mod ui_page_control;
 pub mod ui_segmented_control;
 pub mod ui_slider;
 pub mod ui_switch;
 pub mod ui_text_field;
 
 use crate::frameworks::core_graphics::CGPoint;
+use crate::frameworks::foundation::ns_string::get_static_str;
 use crate::frameworks::foundation::NSUInteger;
 use crate::objc::{
     id, impl_HostObject_with_superclass, msg, msg_send, msg_super, nil, objc_classes, release,
@@ -33,7 +35,7 @@ pub const UIControlEventTouchUpInside: UIControlEvents = 1 << 6;
 const UIControlEventTouchUpOutside: UIControlEvents = 1 << 7;
 pub const UIControlEventValueChanged: UIControlEvents = 1 << 12;
 
-struct UIControlHostObject {
+pub struct UIControlHostObject {
     superclass: super::UIViewHostObject,
     enabled: bool,
     selected: bool,
@@ -116,6 +118,34 @@ pub const CLASSES: ClassExports = objc_classes! {
     release(env, tracked_touch);
 
     msg_super![env; this dealloc]
+}
+
+// NSCoding implementation
+- (id)initWithCoder:(id)coder {
+    let this: id = msg_super![env; this initWithCoder:coder];
+
+    // Decode enabled state
+    let enabled_key = get_static_str(env, "UIEnabled");
+    if msg![env; coder containsValueForKey:enabled_key] {
+        let enabled: bool = msg![env; coder decodeBoolForKey:enabled_key];
+        () = msg![env; this setEnabled:enabled];
+    }
+
+    // Decode selected state
+    let selected_key = get_static_str(env, "UISelected");
+    if msg![env; coder containsValueForKey:selected_key] {
+        let selected: bool = msg![env; coder decodeBoolForKey:selected_key];
+        () = msg![env; this setSelected:selected];
+    }
+
+    // Decode highlighted state
+    let highlighted_key = get_static_str(env, "UIHighlighted");
+    if msg![env; coder containsValueForKey:highlighted_key] {
+        let highlighted: bool = msg![env; coder decodeBoolForKey:highlighted_key];
+        () = msg![env; this setHighlighted:highlighted];
+    }
+
+    this
 }
 
 - (UIControlState)state {

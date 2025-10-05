@@ -13,7 +13,10 @@
 //! but it is not the current focus of the touchHLE. The current focus is,
 //! you know, **GAMES**.
 
+use crate::dyld::{ConstantExports, HostConstant};
+use crate::mem::ConstVoidPtr;
 use crate::objc::{id, objc_classes, ClassExports};
+use crate::Environment;
 
 type CLLocationAccuracy = f64;
 
@@ -53,3 +56,15 @@ pub const CLASSES: ClassExports = objc_classes! {
 @end
 
 };
+
+// CLLocationAccuracy constants
+fn kCLLocationAccuracyKilometer(_env: &mut Environment) -> ConstVoidPtr {
+    // Return a pointer to a static f64 value
+    // For constant numeric values, we return them as bit patterns
+    ConstVoidPtr::from_bits(1000f64.to_bits() as u32)
+}
+
+pub const CONSTANTS: ConstantExports = &[(
+    "_kCLLocationAccuracyKilometer",
+    HostConstant::Custom(kCLLocationAccuracyKilometer),
+)];

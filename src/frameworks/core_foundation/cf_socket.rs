@@ -7,7 +7,7 @@
 
 use super::cf_allocator::{kCFAllocatorDefault, CFAllocatorRef};
 use super::CFTypeRef;
-use crate::dyld::{export_c_func, FunctionExports};
+use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::mem::{MutVoidPtr, Ptr};
 use crate::Environment;
 
@@ -33,5 +33,21 @@ fn CFSocketCreate(
     );
     Ptr::null()
 }
+
+// CFStream property keys
+pub const kCFStreamPropertyShouldCloseNativeSocket: &str =
+    "kCFStreamPropertyShouldCloseNativeSocket";
+pub const kCFStreamPropertySocketNativeHandle: &str = "kCFStreamPropertySocketNativeHandle";
+
+pub const CONSTANTS: ConstantExports = &[
+    (
+        "_kCFStreamPropertyShouldCloseNativeSocket",
+        HostConstant::NSString(kCFStreamPropertyShouldCloseNativeSocket),
+    ),
+    (
+        "_kCFStreamPropertySocketNativeHandle",
+        HostConstant::NSString(kCFStreamPropertySocketNativeHandle),
+    ),
+];
 
 pub const FUNCTIONS: FunctionExports = &[export_c_func!(CFSocketCreate(_, _, _, _, _, _, _))];

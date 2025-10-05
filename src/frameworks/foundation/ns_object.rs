@@ -69,8 +69,21 @@ pub const CLASSES: ClassExports = objc_classes! {
     true
 }
 
++ (id)description { // NSString*
+    let class_name = env.objc.get_class_name(this);
+    from_rust_string(env, class_name.to_string())
+}
+
++ (id)debugDescription { // NSString*
+    msg![env; this description]
+}
+
 - (id)init {
     this
+}
+
+- (id)initWithCoder:(id)_coder {
+    msg![env; this init]
 }
 
 - (NSUInteger)retainCount {
@@ -79,16 +92,25 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (id)retain {
     log_dbg!("[{:?} retain]", this);
+    if env.objc.is_static_object(this) {
+        return this;
+    }
     env.objc.increment_refcount(this);
     this
 }
 - (())release {
     log_dbg!("[{:?} release]", this);
+    if env.objc.is_static_object(this) {
+        return;
+    }
     if env.objc.decrement_refcount(this) {
         () = msg![env; this dealloc];
     }
 }
 - (id)autorelease {
+    if env.objc.is_static_object(this) {
+        return this;
+    }
     () = msg_class![env; NSAutoreleasePool addObject:this];
     this
 }
@@ -121,11 +143,16 @@ pub const CLASSES: ClassExports = objc_classes! {
     this == other
 }
 
-// TODO: description and debugDescription (both the instance and class method).
-// This is not hard to add, but before adding a fallback implementation of it,
-// we should make sure all the Foundation classes' overrides of it are there,
-// to prevent weird behavior.
-// TODO: localized description methods also? (not sure if NSObject has them)
+- (id)description { // NSString*
+    let class: Class = msg![env; this class];
+    let class_name = env.objc.get_class_name(class);
+    let desc_str = format!("<{}: {:?}>", class_name, this);
+    from_rust_string(env, desc_str)
+}
+
+- (id)debugDescription { // NSString*
+    msg![env; this description]
+}
 
 // Helper for NSCopying
 - (id)copy {
@@ -312,6 +339,17 @@ forUndefinedKey:(id)key { // NSString*
             log!("Applying game-specific hack for HOS2: ignoring performSelectorOnMainThread:SEL({}) waitUntilDone:true", sel.as_str(&env.mem));
             return;
         }
+    }
+    // Game-specific hack for COD Zombies
+    if env.bundle.bundle_identifier().starts_with("com.activision.callofduty") && wait {
+        log!("Applying game-specific hack for COD Zombies: performing performSelectorOnMainThread:SEL({}) waitUntilDone:true on thread {}", sel.as_str(&env.mem), env.current_thread);
+        if sel.as_str(&env.mem).ends_with(':') {
+            () = msg_send(env, (this, sel, arg));
+        } else {
+            assert!(arg.is_null());
+            () = msg_send(env, (this, sel));
+        }
+        return;
     }
     // TODO: support waiting
     // This would require tail calls for message send or a switch to async model

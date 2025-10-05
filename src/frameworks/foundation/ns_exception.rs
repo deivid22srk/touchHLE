@@ -11,6 +11,21 @@ use crate::{export_c_func, Environment};
 // All constants are NSExceptionName
 pub const CONSTANTS: ConstantExports = &[
     (
+        "_OBJC_EHTYPE_id",
+        HostConstant::Custom(|env| {
+            // Minimal placeholder for Objective-C EH type id
+            let ptr = env.mem.alloc_and_write(0u32);
+            ptr.cast_void().cast_const()
+        }),
+    ),
+    (
+        "_OBJC_EHTYPE_$_NSException",
+        HostConstant::Custom(|env| {
+            let ptr = env.mem.alloc_and_write(0u32);
+            ptr.cast_void().cast_const()
+        }),
+    ),
+    (
         "_NSCharacterConversionException",
         HostConstant::NSString("NSCharacterConversionException"),
     ),

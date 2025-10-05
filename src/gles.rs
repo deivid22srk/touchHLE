@@ -65,6 +65,7 @@
 
 pub mod gles1_native;
 pub mod gles1_on_gl2;
+pub mod gles2;
 mod gles_generic;
 pub mod present;
 mod util;
@@ -74,6 +75,7 @@ pub use touchHLE_gl_bindings::gles11 as gles11_raw;
 
 use gles1_native::GLES1Native;
 use gles1_on_gl2::GLES1OnGL2;
+use gles2::GLES2Native;
 pub use gles_generic::GLES;
 
 /// Labels for [GLES] implementations and an abstraction for constructing them.
@@ -142,4 +144,11 @@ pub fn create_gles1_ctx(
         }
     }
     gles1_ctx.expect("Couldn't create OpenGL ES 1.1 context!")
+}
+
+pub fn create_gles2_ctx(
+    window: &mut crate::window::Window,
+    _options: &crate::options::Options,
+) -> Result<Box<dyn gles2::GLES2>, String> {
+    GLES2Native::new(window).map(|ctx| Box::new(ctx) as Box<dyn gles2::GLES2>)
 }

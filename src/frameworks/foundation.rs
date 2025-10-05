@@ -11,12 +11,13 @@
 //! Being aware of this concept will make common types like `NSArray` and
 //! `NSString` easier to understand.
 
-use crate::dyld::{export_c_func, FunctionExports};
+use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::objc::id;
 use crate::Environment;
 
 pub mod ns_array;
 pub mod ns_autorelease_pool;
+pub mod ns_block;
 pub mod ns_bundle;
 pub mod ns_character_set;
 pub mod ns_coder;
@@ -131,3 +132,45 @@ fn hash_helper<T: std::hash::Hash>(hashable: &T) -> NSUInteger {
 }
 
 pub const FUNCTIONS: FunctionExports = &[export_c_func!(NSStringFromRange(_))];
+
+// NSCalendarIdentifier constants
+const NSGregorianCalendar: &str = "gregorian";
+
+// NSHTTPCookie constants
+const NSHTTPCookieName: &str = "Name";
+const NSHTTPCookieValue: &str = "Value";
+const NSHTTPCookiePath: &str = "Path";
+const NSHTTPCookieDomain: &str = "Domain";
+
+// NSError constants
+const NSUnderlyingErrorKey: &str = "NSUnderlyingError";
+
+pub const CONSTANTS: ConstantExports = &[
+    // Calendar identifiers
+    (
+        "_NSGregorianCalendar",
+        HostConstant::NSString(NSGregorianCalendar),
+    ),
+    // HTTP Cookie keys
+    (
+        "_NSHTTPCookieName",
+        HostConstant::NSString(NSHTTPCookieName),
+    ),
+    (
+        "_NSHTTPCookieValue",
+        HostConstant::NSString(NSHTTPCookieValue),
+    ),
+    (
+        "_NSHTTPCookiePath",
+        HostConstant::NSString(NSHTTPCookiePath),
+    ),
+    (
+        "_NSHTTPCookieDomain",
+        HostConstant::NSString(NSHTTPCookieDomain),
+    ),
+    // Error keys
+    (
+        "_NSUnderlyingErrorKey",
+        HostConstant::NSString(NSUnderlyingErrorKey),
+    ),
+];

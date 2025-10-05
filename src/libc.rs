@@ -45,6 +45,7 @@ pub mod wchar;
 /// Container for state of various child modules
 #[derive(Default)]
 pub struct State {
+    pub cxxabi: cxxabi::State,
     dirent: dirent::State,
     keymgr: keymgr::State,
     math: math::State,

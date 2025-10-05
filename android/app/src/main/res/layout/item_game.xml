@@ -7,25 +7,29 @@
     android:layout_margin="8dp"
     android:clickable="true"
     android:focusable="true"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
-    app:rippleColor="?attr/colorPrimary">
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    style="@style/Widget.Material3.CardView.Elevated">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:padding="16dp">
 
         <!-- Game Icon -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/iconCard"
             android:layout_width="80dp"
             android:layout_height="80dp"
-            android:layout_marginEnd="16dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeColor="?android:attr/textColorSecondary"
-            app:strokeWidth="1dp">
+            app:strokeColor="?attr/colorOutline"
+            app:strokeWidth="1dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
             <ImageView
                 android:id="@+id/gameIconImageView"
@@ -37,61 +41,80 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Game Info -->
-        <LinearLayout
+        <!-- Game Name -->
+        <TextView
+            android:id="@+id/gameNameTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            app:layout_constraintEnd_toStartOf="@+id/gameMenuButton"
+            app:layout_constraintStart_toEndOf="@+id/iconCard"
+            app:layout_constraintTop_toTopOf="@+id/iconCard"
+            tools:text="Super Monkey Ball" />
 
-            <TextView
-                android:id="@+id/gameNameTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:textColor="?attr/colorOnSurface"
-                tools:text="Fire Emblem: Shadow Dragon" />
+        <!-- Game Version -->
+        <TextView
+            android:id="@+id/gameVersionTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintEnd_toEndOf="@+id/gameNameTextView"
+            app:layout_constraintStart_toStartOf="@+id/gameNameTextView"
+            app:layout_constraintTop_toBottomOf="@+id/gameNameTextView"
+            tools:text="Version 1.0.2" />
 
-            <TextView
-                android:id="@+id/gameVersionTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="?android:attr/textColorSecondary"
-                tools:text="Version 1.0.2" />
+        <!-- Game Size -->
+        <TextView
+            android:id="@+id/gameSizeTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintEnd_toEndOf="@+id/gameVersionTextView"
+            app:layout_constraintStart_toStartOf="@+id/gameVersionTextView"
+            app:layout_constraintTop_toBottomOf="@+id/gameVersionTextView"
+            tools:text="45.2 MB" />
 
-            <TextView
-                android:id="@+id/gameSizeTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="?android:attr/textColorSecondary"
-                tools:text="45.2 MB" />
+        <!-- Status Badge -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/statusBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="?attr/colorPrimaryContainer"
+            app:layout_constraintStart_toStartOf="@+id/gameSizeTextView"
+            app:layout_constraintTop_toBottomOf="@+id/gameSizeTextView"
+            app:layout_constraintBottom_toBottomOf="@+id/iconCard">
 
-            <!-- Status Badge -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/badge_background"
                 android:orientation="horizontal"
-                android:padding="6dp">
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:gravity="center_vertical">
 
                 <ImageView
                     android:id="@+id/statusIcon"
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:layout_marginEnd="4dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginEnd="6dp"
                     android:src="@android:drawable/ic_media_play"
-                    android:tint="?attr/colorPrimary"
+                    app:tint="?attr/colorOnPrimaryContainer"
                     android:contentDescription="Status" />
 
                 <TextView
@@ -99,26 +122,26 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/tap_to_play"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?attr/colorPrimary"
+                    android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                    android:textColor="?attr/colorOnPrimaryContainer"
                     android:textStyle="bold" />
 
             </LinearLayout>
 
-        </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Menu Button -->
         <ImageButton
             android:id="@+id/gameMenuButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="center_vertical"
-            android:layout_marginStart="8dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_more"
-            android:tint="?android:attr/textColorSecondary"
-            android:contentDescription="Menu" />
+            app:tint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="Menu"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>

@@ -13,8 +13,9 @@ use crate::frameworks::foundation::ns_string::get_static_str;
 use crate::frameworks::foundation::NSUInteger;
 use crate::gles::gles11_raw as gles11; // constants only
 use crate::gles::gles11_raw::types::*;
+use crate::gles::gles2::GLES2;
 use crate::gles::present::{present_frame, FpsCounter};
-use crate::gles::{create_gles1_ctx, gles1_on_gl2, GLES};
+use crate::gles::{create_gles1_ctx, create_gles2_ctx, gles1_on_gl2, GLES};
 use crate::mem::MutPtr;
 use crate::objc::{id, msg, nil, objc_classes, release, retain, ClassExports, HostObject};
 use crate::options::Options;
@@ -58,14 +59,80 @@ const kEAGLRenderingAPIOpenGLES2: EAGLRenderingAPI = 2;
 #[allow(dead_code)]
 const kEAGLRenderingAPIOpenGLES3: EAGLRenderingAPI = 3;
 
+pub(super) enum GlesContext {
+    Gles1(Box<dyn GLES>),
+    Gles2(Box<dyn GLES2>),
+}
+
+impl GlesContext {
+    pub(super) fn make_current(&self, window: &Window) {
+        match self {
+            GlesContext::Gles1(ctx) => ctx.as_ref().make_current(window),
+            GlesContext::Gles2(ctx) => ctx.as_ref().make_current(window),
+        }
+    }
+
+    pub(super) fn as_gles_mut(&mut self) -> &mut dyn GLES {
+        match self {
+            GlesContext::Gles1(ctx) => ctx.as_mut(),
+            GlesContext::Gles2(ctx) => ctx.as_mut(),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(super) fn as_gles(&self) -> &dyn GLES {
+        match self {
+            GlesContext::Gles1(ctx) => ctx.as_ref(),
+            GlesContext::Gles2(ctx) => ctx.as_ref(),
+        }
+    }
+
+    pub(super) fn as_gles2_mut(&mut self) -> Option<&mut dyn GLES2> {
+        match self {
+            GlesContext::Gles2(ctx) => Some(ctx.as_mut()),
+            _ => None,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(super) fn as_gles2(&self) -> Option<&dyn GLES2> {
+        match self {
+            GlesContext::Gles2(ctx) => Some(ctx.as_ref()),
+            _ => None,
+        }
+    }
+}
+
 pub(super) struct EAGLContextHostObject {
-    pub(super) gles_ctx: Option<Box<dyn GLES>>,
+    pub(super) gles_ctx: Option<GlesContext>,
     /// Mapping of OpenGL ES renderbuffer names to `EAGLDrawable` instances
     /// (always `CAEAGLLayer*`). Retains the instance so it won't dangle.
     renderbuffer_drawable_bindings: Rc<RefCell<HashMap<GLuint, id>>>,
     fps_counter: Option<FpsCounter>,
     next_frame_due: Option<Instant>,
     pub mapped_buffers: HashMap<GLuint, (MutPtr<GLvoid>, *mut GLvoid)>,
+}
+impl EAGLContextHostObject {
+    pub(super) fn ctx(&self) -> &GlesContext {
+        self.gles_ctx
+            .as_ref()
+            .expect("EAGLContext has no GL backend")
+    }
+
+    pub(super) fn ctx_mut(&mut self) -> &mut GlesContext {
+        self.gles_ctx
+            .as_mut()
+            .expect("EAGLContext has no GL backend")
+    }
+
+    pub(super) fn ctx_gles2_mut(&mut self) -> Option<&mut dyn GLES2> {
+        self.gles_ctx.as_mut().and_then(GlesContext::as_gles2_mut)
+    }
+
+    #[allow(dead_code)]
+    pub(super) fn ctx_gles2(&self) -> Option<&dyn GLES2> {
+        self.gles_ctx.as_ref().and_then(GlesContext::as_gles2)
+    }
 }
 impl HostObject for EAGLContextHostObject {}
 
@@ -106,8 +173,11 @@ pub const CLASSES: ClassExports = objc_classes! {
     let current_ctx = env.framework_state.opengles.current_ctx_for_thread(env.current_thread);
 
     if context != nil {
-        let host_obj = env.objc.borrow_mut::<EAGLContextHostObject>(context);
-        host_obj.gles_ctx.as_mut().unwrap().make_current(env.window.as_ref().unwrap());
+        let window_ref = env.window.as_ref().unwrap();
+        {
+            let host_obj = env.objc.borrow::<EAGLContextHostObject>(context);
+            host_obj.ctx().make_current(window_ref);
+        }
         *current_ctx = Some(context);
         env.framework_state.opengles.current_ctx_thread = Some(env.current_thread);
     }
@@ -116,9 +186,9 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)initWithAPI:(EAGLRenderingAPI)api sharegroup:(id)group {
-    if api != kEAGLRenderingAPIOpenGLES1 {
+    if api != kEAGLRenderingAPIOpenGLES1 && api != kEAGLRenderingAPIOpenGLES2 {
         log!(
-            "TODO: App requested EAGL initWithAPI:{} sharegroup:{:?}, returning nil as we only support API 1 for now",
+            "Unhandled EAGL initWithAPI:{} sharegroup:{:?}, returning nil",
             api,
             group
         );
@@ -130,8 +200,10 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
 
     let window = env.window.as_mut().expect("OpenGL ES is not supported in headless mode");
-    let prev_context = env.objc.borrow::<EAGLContextHostObject>(group).gles_ctx.as_ref().unwrap();
-    prev_context.make_current(window);
+    {
+        let prev_context = env.objc.borrow::<EAGLContextHostObject>(group);
+        prev_context.ctx().make_current(window);
+    }
 
     env.window.as_mut().unwrap().set_share_with_current_context(true);
     let res: id = msg![env; this initWithAPI:api];
@@ -147,34 +219,69 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)initWithAPI:(EAGLRenderingAPI)api {
-    if api != kEAGLRenderingAPIOpenGLES1 {
-        log!(
-            "TODO: App requested EAGL initWithAPI:{}, returning nil as we only support API 1 for now",
-            api
-        );
-        return nil;
+    match api {
+        kEAGLRenderingAPIOpenGLES1 => {
+            let window = env
+                .window
+                .as_mut()
+                .expect("OpenGL ES is not supported in headless mode");
+            let gles1_ctx = create_gles1_ctx(window, &env.options);
+
+            // Make the context active briefly so we can read the driver info.
+            // initWithAPI must not leave that context current for the guest.
+            // Clearing current_ctx_thread forces sync_context() to restore the
+            // expected state before the app issues GL calls.
+            gles1_ctx.make_current(window);
+            env.framework_state.opengles.current_ctx_thread = None;
+            log!("Driver info: {}", unsafe { gles1_ctx.driver_description() });
+
+            env.objc.borrow_mut::<EAGLContextHostObject>(this).gles_ctx =
+                Some(GlesContext::Gles1(gles1_ctx));
+
+            this
+        }
+        kEAGLRenderingAPIOpenGLES2 => {
+            let window = env
+                .window
+                .as_mut()
+                .expect("OpenGL ES is not supported in headless mode");
+            match create_gles2_ctx(window, &env.options) {
+                Ok(gles2_ctx) => {
+                    gles2_ctx.make_current(window);
+                    env.framework_state.opengles.current_ctx_thread = None;
+                    log!(
+                        "Driver info (ES2): {}",
+                        unsafe { gles2_ctx.driver_description() }
+                    );
+                    env.objc.borrow_mut::<EAGLContextHostObject>(this).gles_ctx =
+                        Some(GlesContext::Gles2(gles2_ctx));
+                    this
+                }
+                Err(err) => {
+                    log!(
+                        "Failed to create OpenGL ES 2.0 context for initWithAPI:: {}",
+                        err
+                    );
+                    nil
+                }
+            }
+        }
+        other => {
+            log!(
+                "Unhandled EAGL initWithAPI:{}; returning nil",
+                other
+            );
+            nil
+        }
     }
-
-    let window = env.window.as_mut().expect("OpenGL ES is not supported in headless mode");
-    let gles1_ctx = create_gles1_ctx(window, &env.options);
-
-    // Make the context current so we can get driver info from it.
-    // initWithAPI: is not supposed to make the new context current (the app
-    // must call setCurrentContext: for that), so we need to hide this from the
-    // app. Setting current_ctx_thread to None should cause sync_context to
-    // switch back to the right context if the app makes an OpenGL ES call.
-    gles1_ctx.make_current(window);
-    env.framework_state.opengles.current_ctx_thread = None;
-    log!("Driver info: {}", unsafe { gles1_ctx.driver_description() });
-
-    env.objc.borrow_mut::<EAGLContextHostObject>(this).gles_ctx = Some(gles1_ctx);
-
-    this
 }
 
 - (EAGLRenderingAPI)API {
-    // TODO: support later API versions
-    kEAGLRenderingAPIOpenGLES1
+    let host_obj = env.objc.borrow::<EAGLContextHostObject>(this);
+    match host_obj.ctx() {
+        GlesContext::Gles1(_) => kEAGLRenderingAPIOpenGLES1,
+        GlesContext::Gles2(_) => kEAGLRenderingAPIOpenGLES2,
+    }
 }
 
 - (id)sharegroup {
@@ -254,8 +361,6 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (bool)presentRenderbuffer:(NSUInteger)target {
     assert!(target == gles11::RENDERBUFFER_OES);
 
-    // The presented frame should be displayed ASAP, but the next one must be
-    // delayed, so this needs to be checked before returning.
     let sleep_for = limit_framerate(&mut env.objc.borrow_mut::<EAGLContextHostObject>(this).next_frame_due, &env.options);
 
     if env.options.print_fps {
@@ -267,10 +372,48 @@ pub const CLASSES: ClassExports = objc_classes! {
             .count_frame(format_args!("EAGLContext {this:?}"));
     }
 
-    let fullscreen_layer = find_fullscreen_eagl_layer(env);
+    let is_gles2 = {
+        let host_obj = env.objc.borrow::<EAGLContextHostObject>(this);
+        matches!(host_obj.ctx(), GlesContext::Gles2(_))
+    };
 
-    // Unclear from documentation if this method requires the context to be
-    // current, but it would be weird if it didn't?
+    if is_gles2 {
+        let renderbuffer: GLuint = {
+            let window = env
+                .window
+                .as_mut()
+                .expect("OpenGL ES is not supported in headless mode");
+            let gles = super::sync_context(&mut env.framework_state.opengles, &mut env.objc, window, env.current_thread);
+            let mut renderbuffer = 0;
+            unsafe {
+                gles.GetIntegerv(gles11::RENDERBUFFER_BINDING_OES, &mut renderbuffer);
+            }
+            renderbuffer as _
+        };
+        let Some(&drawable) = env
+            .objc
+            .borrow::<EAGLContextHostObject>(this)
+            .renderbuffer_drawable_bindings
+            .borrow()
+            .get(&renderbuffer) else {
+            log_dbg!("Can't present a renderbuffer {:?} not bound to a drawable!", renderbuffer);
+            return false;
+        };
+        let pixels_vec = get_pixels_vec_for_presenting(env, drawable);
+        let window = env
+            .window
+            .as_mut()
+            .expect("OpenGL ES is not supported in headless mode");
+        let gles = super::sync_context(&mut env.framework_state.opengles, &mut env.objc, window, env.current_thread);
+        let (pixels_vec, width, height) = unsafe { read_renderbuffer(gles, pixels_vec) };
+        present_pixels(env, drawable, pixels_vec, width, height);
+        if let Some(sleep_for) = sleep_for {
+            env.sleep(sleep_for, /* tail_call: */ false);
+        }
+        return true;
+    }
+
+    let fullscreen_layer = find_fullscreen_eagl_layer(env);
     let window = env.window.as_mut().expect("OpenGL ES is not supported in headless mode");
     let gles = super::sync_context(&mut env.framework_state.opengles, &mut env.objc, window, env.current_thread);
 
@@ -290,53 +433,23 @@ pub const CLASSES: ClassExports = objc_classes! {
         return false;
     };
 
-    // We're presenting to the opaque CAEAGLLayer that covers the screen.
-    // We can use the fast path where we skip composition and present directly.
     if drawable == fullscreen_layer {
         log_dbg!(
             "Layer {:?} is the fullscreen layer, presenting renderbuffer {:?} directly (fast path).",
             drawable,
             renderbuffer,
         );
-        // re-borrow
         let gles = super::sync_context(&mut env.framework_state.opengles, &mut env.objc, env.window.as_mut().unwrap(), env.current_thread);
         unsafe {
             present_renderbuffer(gles, env.window.as_mut().unwrap());
         }
     } else {
-        if fullscreen_layer != nil {
-            // If there's a single layer that covers the screen, and this isn't
-            // it, there's no point in presenting the output because it won't be
-            // seen. Using a noisy log because it's a weird scenario and might
-            // indicate a bug.
-            log!(
-                "Layer {:?} is not the fullscreen layer {:?}, skipping presentation of renderbuffer {:?}!",
-                drawable,
-                fullscreen_layer,
-                renderbuffer,
-            );
-            if let Some(sleep_for) = sleep_for {
-                env.sleep(sleep_for, /* tail_call: */ false);
-            }
-            return true;
-        }
-
-        // The very slow and inefficient path: not only does glReadPixels()
-        // block the thread until rendering finishes, but the result has to be
-        // copied back to system RAM, and then will have to be copied to VRAM
-        // again during composition. find_fullscreen_eagl_layer() exists to
-        // avoid this.
-        log_dbg!(
-            "There is no fullscreen layer, presenting renderbuffer {:?} to layer {:?} by copying to RAM (slow path).",
-            renderbuffer,
-            drawable,
-        );
+        // Present even if it's not the fullscreen layer by copying pixels.
+        // Some apps render to non-fullscreen CAEAGLLayer; skipping would cause
+        // a black screen. Use slow path copy-to-RAM to ensure visibility.
         let pixels_vec = get_pixels_vec_for_presenting(env, drawable);
-        // re-borrow
         let gles = super::sync_context(&mut env.framework_state.opengles, &mut env.objc, env.window.as_mut().unwrap(), env.current_thread);
-        let (pixels_vec, width, height) = unsafe {
-            read_renderbuffer(gles, pixels_vec)
-        };
+        let (pixels_vec, width, height) = unsafe { read_renderbuffer(gles, pixels_vec) };
         present_pixels(env, drawable, pixels_vec, width, height);
     }
 

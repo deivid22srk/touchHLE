@@ -65,10 +65,35 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 };
 
+/// NSError userInfo dictionary keys
+pub const NSLocalizedDescriptionKey: &str = "NSLocalizedDescription";
+pub const NSLocalizedFailureReasonErrorKey: &str = "NSLocalizedFailureReason";
+pub const NSLocalizedRecoverySuggestionErrorKey: &str = "NSLocalizedRecoverySuggestion";
+pub const NSURLErrorKey: &str = "NSURL";
+pub const NSFilePathErrorKey: &str = "NSFilePath";
+pub const NSErrorFailingURLStringKey: &str = "NSErrorFailingURLStringKey";
+
 pub const CONSTANTS: ConstantExports = &[
     (
         "_NSLocalizedDescriptionKey",
-        HostConstant::NSString("NSLocalizedDescriptionKey"),
+        HostConstant::NSString(NSLocalizedDescriptionKey),
+    ),
+    (
+        "_NSLocalizedFailureReasonErrorKey",
+        HostConstant::NSString(NSLocalizedFailureReasonErrorKey),
+    ),
+    (
+        "_NSLocalizedRecoverySuggestionErrorKey",
+        HostConstant::NSString(NSLocalizedRecoverySuggestionErrorKey),
+    ),
+    ("_NSURLErrorKey", HostConstant::NSString(NSURLErrorKey)),
+    (
+        "_NSFilePathErrorKey",
+        HostConstant::NSString(NSFilePathErrorKey),
+    ),
+    (
+        "_NSErrorFailingURLStringKey",
+        HostConstant::NSString(NSErrorFailingURLStringKey),
     ),
     (
         "_NSOSStatusErrorDomain",

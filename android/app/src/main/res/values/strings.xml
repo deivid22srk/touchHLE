@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">touchHLE</string>
+    <string name="app_name">Orion</string>
     <string name="select_games_folder">Selecionar Pasta de Jogos</string>
     <string name="games_folder_description">Escolha onde estão seus arquivos .ipa ou .app</string>
     <string name="browse_folder">Navegar</string>
@@ -20,4 +20,29 @@
     <string name="file_manager">Gerenciar Arquivos</string>
     <string name="change_folder">Mudar Pasta</string>
     <string name="refresh">Atualizar</string>
+    <string name="settings_description">Ajuste como o touchHLE se comporta durante a execução dos jogos</string>
+    <string name="scale_hack_label">Escala da renderização</string>
+    <string name="scale_hack_default">Padrão</string>
+    <string name="scale_hack_off">Desligado</string>
+    <string name="scale_hack_two_x">2×</string>
+    <string name="scale_hack_three_x">3×</string>
+    <string name="scale_hack_four_x">4×</string>
+    <string name="orientation_label">Orientação inicial</string>
+    <string name="orientation_default">Padrão</string>
+    <string name="orientation_landscape_left">Paisagem esquerda</string>
+    <string name="orientation_landscape_right">Paisagem direita</string>
+    <string name="analog_stick_label">Usar analógicos como controle de inclinação</string>
+    <string name="network_label">Permitir acesso à rede</string>
+    <string name="fullscreen_label">Forçar tela cheia</string>
+    <string name="auto_copy_error_label">Copiar erro para área de transferência</string>
+    <string name="settings_save">Fechar</string>
+    <string name="settings_auto_save">As configurações são salvas automaticamente</string>
+    <string name="performance_monitor">Monitor de Desempenho</string>
+    <string name="show_fps">Mostrar FPS</string>
+    <string name="show_ram">Mostrar RAM</string>
+    <string name="performance_description">Monitore o desempenho do jogo em tempo real</string>
+    <string name="fps_format">FPS: %d</string>
+    <string name="ram_format">RAM: %.1f MB</string>
+    <string name="game_menu">Menu do Jogo</string>
+    <string name="exit_game">Sair do Jogo</string>
 </resources>

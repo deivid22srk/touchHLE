@@ -20,6 +20,8 @@ use touchHLE_gl_bindings::gles11::{
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::frameworks::opengles::eagl::EAGLContextHostObject;
 use crate::gles::gles11_raw as gles11; // constants only
+use crate::gles::gles11_raw::types::GLchar;
+use crate::gles::gles2::GLES2;
 use crate::gles::GLES;
 use crate::mem::{ConstPtr, ConstVoidPtr, GuestISize, GuestUSize, Mem, MutPtr, MutVoidPtr, Ptr};
 use crate::objc::nil;
@@ -118,6 +120,52 @@ where
     //panic_on_gl_errors(&mut *gles);
     #[allow(clippy::let_and_return)]
     res
+}
+
+fn with_ctx_and_mem_gles2<T, U: Default>(env: &mut Environment, f: T) -> U
+where
+    T: FnOnce(&mut dyn GLES2, &mut Mem) -> U,
+{
+    if env
+        .framework_state
+        .opengles
+        .current_ctx_for_thread(env.current_thread)
+        .is_none()
+    {
+        log!(
+            "Warning: No EAGLContext for thread {}! Ignoring OpenGL ES 2.0 call, returning default value.",
+            env.current_thread
+        );
+        return U::default();
+    }
+
+    let gles = super::sync_context_gles2(
+        &mut env.framework_state.opengles,
+        &mut env.objc,
+        env.window
+            .as_mut()
+            .expect("OpenGL ES is not supported in headless mode"),
+        env.current_thread,
+    );
+
+    f(gles, &mut env.mem)
+}
+
+#[allow(dead_code)]
+fn with_ctx_and_mem_gles2_no_skip<T, U>(env: &mut Environment, f: T) -> U
+where
+    T: FnOnce(&mut dyn GLES2, &mut Mem) -> U,
+{
+    let gles = super::sync_context_gles2(
+        &mut env.framework_state.opengles,
+        &mut env.objc,
+        env.window
+            .as_mut()
+            .expect("OpenGL ES is not supported in headless mode"),
+        env.current_thread,
+    );
+
+    f(gles, &mut env.mem)
 }
 
 /// Useful for debugging
@@ -1310,6 +1358,96 @@ fn glGenerateMipmapOES(env: &mut Environment, target: GLenum) {
     with_ctx_and_mem(env, |gles, _mem| unsafe { gles.GenerateMipmapOES(target) })
 }
 
+fn glGenFramebuffers(env: &mut Environment, n: GLsizei, framebuffers: MutPtr<GLuint>) {
+    glGenFramebuffersOES(env, n, framebuffers)
+}
+
+fn glGenRenderbuffers(env: &mut Environment, n: GLsizei, renderbuffers: MutPtr<GLuint>) {
+    glGenRenderbuffersOES(env, n, renderbuffers)
+}
+
+fn glIsFramebuffer(env: &mut Environment, framebuffer: GLuint) -> GLboolean {
+    glIsFramebufferOES(env, framebuffer)
+}
+
+fn glIsRenderbuffer(env: &mut Environment, renderbuffer: GLuint) -> GLboolean {
+    glIsRenderbufferOES(env, renderbuffer)
+}
+
+fn glBindFramebuffer(env: &mut Environment, target: GLenum, framebuffer: GLuint) {
+    glBindFramebufferOES(env, target, framebuffer)
+}
+
+fn glBindRenderbuffer(env: &mut Environment, target: GLenum, renderbuffer: GLuint) {
+    glBindRenderbufferOES(env, target, renderbuffer)
+}
+
+fn glRenderbufferStorage(
+    env: &mut Environment,
+    target: GLenum,
+    internalformat: GLenum,
+    width: GLsizei,
+    height: GLsizei,
+) {
+    glRenderbufferStorageOES(env, target, internalformat, width, height)
+}
+
+fn glFramebufferRenderbuffer(
+    env: &mut Environment,
+    target: GLenum,
+    attachment: GLenum,
+    renderbuffertarget: GLenum,
+    renderbuffer: GLuint,
+) {
+    glFramebufferRenderbufferOES(env, target, attachment, renderbuffertarget, renderbuffer)
+}
+
+fn glFramebufferTexture2D(
+    env: &mut Environment,
+    target: GLenum,
+    attachment: GLenum,
+    textarget: GLenum,
+    texture: GLuint,
+    level: GLint,
+) {
+    glFramebufferTexture2DOES(env, target, attachment, textarget, texture, level)
+}
+
+fn glGetFramebufferAttachmentParameteriv(
+    env: &mut Environment,
+    target: GLenum,
+    attachment: GLenum,
+    pname: GLenum,
+    params: MutPtr<GLint>,
+) {
+    glGetFramebufferAttachmentParameterivOES(env, target, attachment, pname, params)
+}
+
+fn glGetRenderbufferParameteriv(
+    env: &mut Environment,
+    target: GLenum,
+    pname: GLenum,
+    params: MutPtr<GLint>,
+) {
+    glGetRenderbufferParameterivOES(env, target, pname, params)
+}
+
+fn glCheckFramebufferStatus(env: &mut Environment, target: GLenum) -> GLenum {
+    glCheckFramebufferStatusOES(env, target)
+}
+
+fn glDeleteFramebuffers(env: &mut Environment, n: GLsizei, framebuffers: ConstPtr<GLuint>) {
+    glDeleteFramebuffersOES(env, n, framebuffers)
+}
+
+fn glDeleteRenderbuffers(env: &mut Environment, n: GLsizei, renderbuffers: ConstPtr<GLuint>) {
+    glDeleteRenderbuffersOES(env, n, renderbuffers)
+}
+
+fn glGenerateMipmap(env: &mut Environment, target: GLenum) {
+    glGenerateMipmapOES(env, target)
+}
+
 fn glGetBufferParameteriv(
     env: &mut Environment,
     target: GLenum,
@@ -1431,6 +1569,792 @@ unsafe fn restore_fog_state_values(gles: &mut dyn GLES, from_backup: Option<(f32
         gles.Fogf(gles11::FOG_START, fogStart);
         gles.Fogf(gles11::FOG_END, fogEnd);
     }
+}
+
+fn glBlendEquation(env: &mut Environment, mode: GLenum) {
+    glBlendEquationOES(env, mode)
+}
+
+fn glAttachShader(env: &mut Environment, program: GLuint, shader: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.AttachShader(program, shader);
+    });
+}
+
+fn glBindAttribLocation(env: &mut Environment, program: GLuint, index: GLuint, name: ConstPtr<u8>) {
+    let name_bytes = env.mem.cstr_at(name).to_vec();
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.BindAttribLocation(program, index, name_bytes.as_ptr().cast());
+    });
+}
+
+fn glBlendColor(
+    env: &mut Environment,
+    red: GLfloat,
+    green: GLfloat,
+    blue: GLfloat,
+    alpha: GLfloat,
+) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.BlendColor(red, green, blue, alpha);
+    });
+}
+
+fn glBlendEquationSeparate(env: &mut Environment, mode_rgb: GLenum, mode_alpha: GLenum) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.BlendEquationSeparate(mode_rgb, mode_alpha);
+    });
+}
+
+fn glBlendFuncSeparate(
+    env: &mut Environment,
+    src_rgb: GLenum,
+    dst_rgb: GLenum,
+    src_alpha: GLenum,
+    dst_alpha: GLenum,
+) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.BlendFuncSeparate(src_rgb, dst_rgb, src_alpha, dst_alpha);
+    });
+}
+
+fn glCompileShader(env: &mut Environment, shader: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.CompileShader(shader);
+    });
+}
+
+fn glCreateProgram(env: &mut Environment) -> GLuint {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe { gles.CreateProgram() })
+}
+
+fn glCreateShader(env: &mut Environment, type_: GLenum) -> GLuint {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe { gles.CreateShader(type_) })
+}
+
+fn glDeleteProgram(env: &mut Environment, program: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.DeleteProgram(program);
+    });
+}
+
+fn glDeleteShader(env: &mut Environment, shader: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.DeleteShader(shader);
+    });
+}
+
+fn glDetachShader(env: &mut Environment, program: GLuint, shader: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.DetachShader(program, shader);
+    });
+}
+
+fn glDisableVertexAttribArray(env: &mut Environment, index: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.DisableVertexAttribArray(index);
+    });
+}
+
+fn glEnableVertexAttribArray(env: &mut Environment, index: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.EnableVertexAttribArray(index);
+    });
+}
+
+fn glGetActiveAttrib(
+    env: &mut Environment,
+    program: GLuint,
+    index: GLuint,
+    bufsize: GLsizei,
+    length: MutPtr<GLsizei>,
+    size: MutPtr<GLint>,
+    type_: MutPtr<GLenum>,
+    name: MutPtr<u8>,
+) {
+    let bufsize_usize = bufsize.max(0) as usize;
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let name_ptr = if bufsize_usize == 0 {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(name.cast::<GLchar>(), bufsize_usize.try_into().unwrap())
+        };
+        let length_ptr = if length.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(length, 1)
+        };
+        let size_ptr = if size.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(size, 1)
+        };
+        let type_ptr = if type_.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(type_, 1)
+        };
+        unsafe {
+            gles.GetActiveAttrib(
+                program,
+                index,
+                bufsize,
+                length_ptr,
+                size_ptr,
+                type_ptr,
+                name_ptr.cast(),
+            );
+        }
+    });
+}
+
+fn glGetActiveUniform(
+    env: &mut Environment,
+    program: GLuint,
+    index: GLuint,
+    bufsize: GLsizei,
+    length: MutPtr<GLsizei>,
+    size: MutPtr<GLint>,
+    type_: MutPtr<GLenum>,
+    name: MutPtr<u8>,
+) {
+    let bufsize_usize = bufsize.max(0) as usize;
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let name_ptr = if bufsize_usize == 0 {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(name.cast::<GLchar>(), bufsize_usize.try_into().unwrap())
+        };
+        let length_ptr = if length.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(length, 1)
+        };
+        let size_ptr = if size.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(size, 1)
+        };
+        let type_ptr = if type_.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(type_, 1)
+        };
+        unsafe {
+            gles.GetActiveUniform(
+                program,
+                index,
+                bufsize,
+                length_ptr,
+                size_ptr,
+                type_ptr,
+                name_ptr.cast(),
+            );
+        }
+    });
+}
+
+fn glGetAttachedShaders(
+    env: &mut Environment,
+    program: GLuint,
+    maxcount: GLsizei,
+    count: MutPtr<GLsizei>,
+    shaders: MutPtr<GLuint>,
+) {
+    let maxcount_usize = maxcount.max(0) as usize;
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let count_ptr = if count.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(count, 1)
+        };
+        let shaders_ptr = if maxcount_usize == 0 {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(shaders, maxcount_usize.try_into().unwrap())
+        };
+        unsafe {
+            gles.GetAttachedShaders(program, maxcount, count_ptr, shaders_ptr);
+        }
+    });
+}
+
+fn glGetAttribLocation(env: &mut Environment, program: GLuint, name: ConstPtr<u8>) -> GLint {
+    let name_bytes = env.mem.cstr_at(name).to_vec();
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.GetAttribLocation(program, name_bytes.as_ptr().cast())
+    })
+}
+
+fn glGetProgramInfoLog(
+    env: &mut Environment,
+    program: GLuint,
+    bufsize: GLsizei,
+    length: MutPtr<GLsizei>,
+    infolog: MutPtr<u8>,
+) {
+    let bufsize_usize = bufsize.max(0) as usize;
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let info_log_ptr = if bufsize_usize == 0 {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(infolog.cast::<GLchar>(), bufsize_usize.try_into().unwrap())
+        };
+        let length_ptr = if length.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(length, 1)
+        };
+        unsafe {
+            gles.GetProgramInfoLog(program, bufsize, length_ptr, info_log_ptr.cast());
+        }
+    });
+}
+
+fn glGetProgramiv(env: &mut Environment, program: GLuint, pname: GLenum, params: MutPtr<GLint>) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let params_ptr = mem.ptr_at_mut(params, 1);
+        unsafe { gles.GetProgramiv(program, pname, params_ptr) };
+    });
+}
+
+fn glGetShaderInfoLog(
+    env: &mut Environment,
+    shader: GLuint,
+    bufsize: GLsizei,
+    length: MutPtr<GLsizei>,
+    infolog: MutPtr<u8>,
+) {
+    let bufsize_usize = bufsize.max(0) as usize;
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let info_log_ptr = if bufsize_usize == 0 {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(infolog.cast::<GLchar>(), bufsize_usize.try_into().unwrap())
+        };
+        let length_ptr = if length.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(length, 1)
+        };
+        unsafe {
+            gles.GetShaderInfoLog(shader, bufsize, length_ptr, info_log_ptr.cast());
+        }
+    });
+}
+
+fn glGetShaderPrecisionFormat(
+    env: &mut Environment,
+    shadertype: GLenum,
+    precisiontype: GLenum,
+    range: MutPtr<GLint>,
+    precision: MutPtr<GLint>,
+) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let range_ptr = if range.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(range, 2)
+        };
+        let precision_ptr = if precision.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(precision, 1)
+        };
+        unsafe {
+            gles.GetShaderPrecisionFormat(shadertype, precisiontype, range_ptr, precision_ptr)
+        };
+    });
+}
+
+fn glGetShaderSource(
+    env: &mut Environment,
+    shader: GLuint,
+    bufsize: GLsizei,
+    length: MutPtr<GLsizei>,
+    source: MutPtr<u8>,
+) {
+    let bufsize_usize = bufsize.max(0) as usize;
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let source_ptr = if bufsize_usize == 0 {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(source, bufsize_usize.try_into().unwrap())
+        };
+        let length_ptr = if length.is_null() {
+            std::ptr::null_mut()
+        } else {
+            mem.ptr_at_mut(length, 1)
+        };
+        unsafe { gles.GetShaderSource(shader, bufsize, length_ptr, source_ptr.cast()) };
+    });
+}
+
+fn glGetShaderiv(env: &mut Environment, shader: GLuint, pname: GLenum, params: MutPtr<GLint>) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let params_ptr = mem.ptr_at_mut(params, 1);
+        unsafe { gles.GetShaderiv(shader, pname, params_ptr) };
+    });
+}
+
+fn glGetUniformfv(
+    env: &mut Environment,
+    program: GLuint,
+    location: GLint,
+    params: MutPtr<GLfloat>,
+) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let params_ptr = mem.ptr_at_mut(params, 16);
+        unsafe { gles.GetUniformfv(program, location, params_ptr) };
+    });
+}
+
+fn glGetUniformiv(env: &mut Environment, program: GLuint, location: GLint, params: MutPtr<GLint>) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let params_ptr = mem.ptr_at_mut(params, 16);
+        unsafe { gles.GetUniformiv(program, location, params_ptr) };
+    });
+}
+
+fn glGetUniformLocation(env: &mut Environment, program: GLuint, name: ConstPtr<u8>) -> GLint {
+    let name_bytes = env.mem.cstr_at(name).to_vec();
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.GetUniformLocation(program, name_bytes.as_ptr().cast())
+    })
+}
+
+fn glGetVertexAttribfv(
+    env: &mut Environment,
+    index: GLuint,
+    pname: GLenum,
+    params: MutPtr<GLfloat>,
+) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let params_ptr = mem.ptr_at_mut(params, 4);
+        unsafe { gles.GetVertexAttribfv(index, pname, params_ptr) };
+    });
+}
+
+fn glGetVertexAttribiv(env: &mut Environment, index: GLuint, pname: GLenum, params: MutPtr<GLint>) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let params_ptr = mem.ptr_at_mut(params, 4);
+        unsafe { gles.GetVertexAttribiv(index, pname, params_ptr) };
+    });
+}
+
+fn glGetVertexAttribPointerv(
+    env: &mut Environment,
+    index: GLuint,
+    pname: GLenum,
+    pointer: MutPtr<MutVoidPtr>,
+) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let mut host_pointer: *mut GLvoid = std::ptr::null_mut();
+        unsafe { gles.GetVertexAttribPointerv(index, pname, &mut host_pointer) };
+        let gles_common: &mut dyn GLES = gles;
+        let guest_pointer = unsafe {
+            translate_pointer_or_offset_to_guest(
+                gles_common,
+                mem,
+                host_pointer,
+                gles11::ARRAY_BUFFER_BINDING,
+            )
+        };
+        mem.write(pointer, MutVoidPtr::from_bits(guest_pointer.to_bits()));
+    });
+}
+
+fn glIsProgram(env: &mut Environment, program: GLuint) -> GLboolean {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe { gles.IsProgram(program) })
+}
+
+fn glIsShader(env: &mut Environment, shader: GLuint) -> GLboolean {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe { gles.IsShader(shader) })
+}
+
+fn glLinkProgram(env: &mut Environment, program: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.LinkProgram(program);
+    });
+}
+
+fn glReleaseShaderCompiler(env: &mut Environment) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe { gles.ReleaseShaderCompiler() });
+}
+
+fn glShaderBinary(
+    env: &mut Environment,
+    n: GLsizei,
+    shaders: ConstPtr<GLuint>,
+    binaryformat: GLenum,
+    binary: ConstPtr<u8>,
+    length: GLsizei,
+) {
+    let n_usize = n.max(0) as usize;
+    let length_usize = length.max(0) as usize;
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let shaders_ptr = if n_usize == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(shaders, n_usize.try_into().unwrap())
+        };
+        let binary_ptr = if length_usize == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(binary, length_usize.try_into().unwrap())
+        };
+        unsafe {
+            gles.ShaderBinary(n, shaders_ptr, binaryformat, binary_ptr.cast(), length);
+        }
+    });
+}
+
+fn glShaderSource(
+    env: &mut Environment,
+    shader: GLuint,
+    count: GLsizei,
+    string: ConstPtr<ConstPtr<u8>>,
+    length: ConstPtr<GLint>,
+) {
+    let count_usize = count.max(0) as usize;
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let string_ptr = if count_usize == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(string, count_usize.try_into().unwrap())
+        };
+        let length_ptr = if length.is_null() {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(length, count_usize.try_into().unwrap())
+        };
+        unsafe {
+            gles.ShaderSource(shader, count, string_ptr.cast(), length_ptr);
+        }
+    });
+}
+
+fn glStencilFuncSeparate(
+    env: &mut Environment,
+    face: GLenum,
+    func: GLenum,
+    ref_: GLint,
+    mask: GLuint,
+) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.StencilFuncSeparate(face, func, ref_, mask);
+    });
+}
+
+fn glStencilMaskSeparate(env: &mut Environment, face: GLenum, mask: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.StencilMaskSeparate(face, mask);
+    });
+}
+
+fn glStencilOpSeparate(
+    env: &mut Environment,
+    face: GLenum,
+    sfail: GLenum,
+    dpfail: GLenum,
+    dppass: GLenum,
+) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.StencilOpSeparate(face, sfail, dpfail, dppass);
+    });
+}
+
+fn glUniform1f(env: &mut Environment, location: GLint, v0: GLfloat) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.Uniform1f(location, v0);
+    });
+}
+
+fn glUniform1fv(env: &mut Environment, location: GLint, count: GLsizei, value: ConstPtr<GLfloat>) {
+    let total = (count.max(0) as usize).saturating_mul(1);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.Uniform1fv(location, count, value_ptr) };
+    });
+}
+
+fn glUniform1i(env: &mut Environment, location: GLint, v0: GLint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.Uniform1i(location, v0);
+    });
+}
+
+fn glUniform1iv(env: &mut Environment, location: GLint, count: GLsizei, value: ConstPtr<GLint>) {
+    let total = (count.max(0) as usize).saturating_mul(1);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.Uniform1iv(location, count, value_ptr) };
+    });
+}
+
+fn glUniform2f(env: &mut Environment, location: GLint, v0: GLfloat, v1: GLfloat) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.Uniform2f(location, v0, v1);
+    });
+}
+
+fn glUniform2fv(env: &mut Environment, location: GLint, count: GLsizei, value: ConstPtr<GLfloat>) {
+    let total = (count.max(0) as usize).saturating_mul(2);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.Uniform2fv(location, count, value_ptr) };
+    });
+}
+
+fn glUniform2i(env: &mut Environment, location: GLint, v0: GLint, v1: GLint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.Uniform2i(location, v0, v1);
+    });
+}
+
+fn glUniform2iv(env: &mut Environment, location: GLint, count: GLsizei, value: ConstPtr<GLint>) {
+    let total = (count.max(0) as usize).saturating_mul(2);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.Uniform2iv(location, count, value_ptr) };
+    });
+}
+
+fn glUniform3f(env: &mut Environment, location: GLint, v0: GLfloat, v1: GLfloat, v2: GLfloat) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.Uniform3f(location, v0, v1, v2);
+    });
+}
+
+fn glUniform3fv(env: &mut Environment, location: GLint, count: GLsizei, value: ConstPtr<GLfloat>) {
+    let total = (count.max(0) as usize).saturating_mul(3);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.Uniform3fv(location, count, value_ptr) };
+    });
+}
+
+fn glUniform3i(env: &mut Environment, location: GLint, v0: GLint, v1: GLint, v2: GLint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.Uniform3i(location, v0, v1, v2);
+    });
+}
+
+fn glUniform3iv(env: &mut Environment, location: GLint, count: GLsizei, value: ConstPtr<GLint>) {
+    let total = (count.max(0) as usize).saturating_mul(3);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.Uniform3iv(location, count, value_ptr) };
+    });
+}
+
+fn glUniform4f(
+    env: &mut Environment,
+    location: GLint,
+    v0: GLfloat,
+    v1: GLfloat,
+    v2: GLfloat,
+    v3: GLfloat,
+) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.Uniform4f(location, v0, v1, v2, v3);
+    });
+}
+
+fn glUniform4fv(env: &mut Environment, location: GLint, count: GLsizei, value: ConstPtr<GLfloat>) {
+    let total = (count.max(0) as usize).saturating_mul(4);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.Uniform4fv(location, count, value_ptr) };
+    });
+}
+
+fn glUniform4i(env: &mut Environment, location: GLint, v0: GLint, v1: GLint, v2: GLint, v3: GLint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.Uniform4i(location, v0, v1, v2, v3);
+    });
+}
+
+fn glUniform4iv(env: &mut Environment, location: GLint, count: GLsizei, value: ConstPtr<GLint>) {
+    let total = (count.max(0) as usize).saturating_mul(4);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.Uniform4iv(location, count, value_ptr) };
+    });
+}
+
+fn glUniformMatrix2fv(
+    env: &mut Environment,
+    location: GLint,
+    count: GLsizei,
+    transpose: GLboolean,
+    value: ConstPtr<GLfloat>,
+) {
+    let total = (count.max(0) as usize).saturating_mul(4);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.UniformMatrix2fv(location, count, transpose, value_ptr) };
+    });
+}
+
+fn glUniformMatrix3fv(
+    env: &mut Environment,
+    location: GLint,
+    count: GLsizei,
+    transpose: GLboolean,
+    value: ConstPtr<GLfloat>,
+) {
+    let total = (count.max(0) as usize).saturating_mul(9);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.UniformMatrix3fv(location, count, transpose, value_ptr) };
+    });
+}
+
+fn glUniformMatrix4fv(
+    env: &mut Environment,
+    location: GLint,
+    count: GLsizei,
+    transpose: GLboolean,
+    value: ConstPtr<GLfloat>,
+) {
+    let total = (count.max(0) as usize).saturating_mul(16);
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let value_ptr = if total == 0 {
+            std::ptr::null()
+        } else {
+            mem.ptr_at(value, total.try_into().unwrap())
+        };
+        unsafe { gles.UniformMatrix4fv(location, count, transpose, value_ptr) };
+    });
+}
+
+fn glUseProgram(env: &mut Environment, program: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe { gles.UseProgram(program) });
+}
+
+fn glValidateProgram(env: &mut Environment, program: GLuint) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe { gles.ValidateProgram(program) });
+}
+
+fn glVertexAttrib1f(env: &mut Environment, index: GLuint, x: GLfloat) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe { gles.VertexAttrib1f(index, x) });
+}
+
+fn glVertexAttrib1fv(env: &mut Environment, index: GLuint, v: ConstPtr<GLfloat>) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let ptr = mem.ptr_at(v, 1);
+        unsafe { gles.VertexAttrib1fv(index, ptr) };
+    });
+}
+
+fn glVertexAttrib2f(env: &mut Environment, index: GLuint, x: GLfloat, y: GLfloat) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe { gles.VertexAttrib2f(index, x, y) });
+}
+
+fn glVertexAttrib2fv(env: &mut Environment, index: GLuint, v: ConstPtr<GLfloat>) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let ptr = mem.ptr_at(v, 2);
+        unsafe { gles.VertexAttrib2fv(index, ptr) };
+    });
+}
+
+fn glVertexAttrib3f(env: &mut Environment, index: GLuint, x: GLfloat, y: GLfloat, z: GLfloat) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.VertexAttrib3f(index, x, y, z)
+    });
+}
+
+fn glVertexAttrib3fv(env: &mut Environment, index: GLuint, v: ConstPtr<GLfloat>) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let ptr = mem.ptr_at(v, 3);
+        unsafe { gles.VertexAttrib3fv(index, ptr) };
+    });
+}
+
+fn glVertexAttrib4f(
+    env: &mut Environment,
+    index: GLuint,
+    x: GLfloat,
+    y: GLfloat,
+    z: GLfloat,
+    w: GLfloat,
+) {
+    with_ctx_and_mem_gles2(env, |gles, _| unsafe {
+        gles.VertexAttrib4f(index, x, y, z, w)
+    });
+}
+
+fn glVertexAttrib4fv(env: &mut Environment, index: GLuint, v: ConstPtr<GLfloat>) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let ptr = mem.ptr_at(v, 4);
+        unsafe { gles.VertexAttrib4fv(index, ptr) };
+    });
+}
+
+fn glVertexAttribPointer(
+    env: &mut Environment,
+    index: GLuint,
+    size: GLint,
+    type_: GLenum,
+    normalized: GLboolean,
+    stride: GLsizei,
+    pointer: ConstPtr<GLvoid>,
+) {
+    with_ctx_and_mem_gles2(env, |gles, mem| {
+        let gles_common: &mut dyn GLES = gles;
+        let host_pointer = unsafe {
+            translate_pointer_or_offset_to_host(
+                gles_common,
+                mem,
+                pointer,
+                gles11::ARRAY_BUFFER_BINDING,
+            )
+        };
+        unsafe {
+            gles.VertexAttribPointer(index, size, type_, normalized, stride, host_pointer);
+        }
+    });
 }
 
 pub const FUNCTIONS: FunctionExports = &[
@@ -1593,6 +2517,90 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(glGetBufferParameteriv(_, _, _)),
     export_c_func!(glMapBufferOES(_, _)),
     export_c_func!(glUnmapBufferOES(_)),
+    export_c_func!(glBlendEquation(_)),
+    export_c_func!(glAttachShader(_, _)),
+    export_c_func!(glBindAttribLocation(_, _, _)),
+    export_c_func!(glBlendColor(_, _, _, _)),
+    export_c_func!(glBlendEquationSeparate(_, _)),
+    export_c_func!(glBlendFuncSeparate(_, _, _, _)),
+    export_c_func!(glCompileShader(_)),
+    export_c_func!(glCreateProgram()),
+    export_c_func!(glCreateShader(_)),
+    export_c_func!(glDeleteProgram(_)),
+    export_c_func!(glDeleteShader(_)),
+    export_c_func!(glDetachShader(_, _)),
+    export_c_func!(glDisableVertexAttribArray(_)),
+    export_c_func!(glEnableVertexAttribArray(_)),
+    export_c_func!(glGetActiveAttrib(_, _, _, _, _, _, _)),
+    export_c_func!(glGetActiveUniform(_, _, _, _, _, _, _)),
+    export_c_func!(glGetAttachedShaders(_, _, _, _)),
+    export_c_func!(glGetAttribLocation(_, _)),
+    export_c_func!(glGetProgramInfoLog(_, _, _, _)),
+    export_c_func!(glGetProgramiv(_, _, _)),
+    export_c_func!(glGetShaderInfoLog(_, _, _, _)),
+    export_c_func!(glGetShaderPrecisionFormat(_, _, _, _)),
+    export_c_func!(glGetShaderSource(_, _, _, _)),
+    export_c_func!(glGetShaderiv(_, _, _)),
+    export_c_func!(glGetUniformfv(_, _, _)),
+    export_c_func!(glGetUniformiv(_, _, _)),
+    export_c_func!(glGetUniformLocation(_, _)),
+    export_c_func!(glGetVertexAttribfv(_, _, _)),
+    export_c_func!(glGetVertexAttribiv(_, _, _)),
+    export_c_func!(glGetVertexAttribPointerv(_, _, _)),
+    export_c_func!(glIsProgram(_)),
+    export_c_func!(glIsShader(_)),
+    export_c_func!(glLinkProgram(_)),
+    export_c_func!(glReleaseShaderCompiler()),
+    export_c_func!(glShaderBinary(_, _, _, _, _)),
+    export_c_func!(glShaderSource(_, _, _, _)),
+    export_c_func!(glStencilFuncSeparate(_, _, _, _)),
+    export_c_func!(glStencilMaskSeparate(_, _)),
+    export_c_func!(glStencilOpSeparate(_, _, _, _)),
+    export_c_func!(glUniform1f(_, _)),
+    export_c_func!(glUniform1fv(_, _, _)),
+    export_c_func!(glUniform1i(_, _)),
+    export_c_func!(glUniform1iv(_, _, _)),
+    export_c_func!(glUniform2f(_, _, _)),
+    export_c_func!(glUniform2fv(_, _, _)),
+    export_c_func!(glUniform2i(_, _, _)),
+    export_c_func!(glUniform2iv(_, _, _)),
+    export_c_func!(glUniform3f(_, _, _, _)),
+    export_c_func!(glUniform3fv(_, _, _)),
+    export_c_func!(glUniform3i(_, _, _, _)),
+    export_c_func!(glUniform3iv(_, _, _)),
+    export_c_func!(glUniform4f(_, _, _, _, _)),
+    export_c_func!(glUniform4fv(_, _, _)),
+    export_c_func!(glUniform4i(_, _, _, _, _)),
+    export_c_func!(glUniform4iv(_, _, _)),
+    export_c_func!(glUniformMatrix2fv(_, _, _, _)),
+    export_c_func!(glUniformMatrix3fv(_, _, _, _)),
+    export_c_func!(glUniformMatrix4fv(_, _, _, _)),
+    export_c_func!(glUseProgram(_)),
+    export_c_func!(glValidateProgram(_)),
+    export_c_func!(glVertexAttrib1f(_, _)),
+    export_c_func!(glVertexAttrib1fv(_, _)),
+    export_c_func!(glVertexAttrib2f(_, _, _)),
+    export_c_func!(glVertexAttrib2fv(_, _)),
+    export_c_func!(glVertexAttrib3f(_, _, _, _)),
+    export_c_func!(glVertexAttrib3fv(_, _)),
+    export_c_func!(glVertexAttrib4f(_, _, _, _, _)),
+    export_c_func!(glVertexAttrib4fv(_, _)),
+    export_c_func!(glVertexAttribPointer(_, _, _, _, _, _)),
+    export_c_func!(glGenFramebuffers(_, _)),
+    export_c_func!(glGenRenderbuffers(_, _)),
+    export_c_func!(glIsFramebuffer(_)),
+    export_c_func!(glIsRenderbuffer(_)),
+    export_c_func!(glBindFramebuffer(_, _)),
+    export_c_func!(glBindRenderbuffer(_, _)),
+    export_c_func!(glRenderbufferStorage(_, _, _, _)),
+    export_c_func!(glFramebufferRenderbuffer(_, _, _, _)),
+    export_c_func!(glFramebufferTexture2D(_, _, _, _, _)),
+    export_c_func!(glGetFramebufferAttachmentParameteriv(_, _, _, _)),
+    export_c_func!(glGetRenderbufferParameteriv(_, _, _)),
+    export_c_func!(glCheckFramebufferStatus(_)),
+    export_c_func!(glDeleteFramebuffers(_, _)),
+    export_c_func!(glDeleteRenderbuffers(_, _)),
+    export_c_func!(glGenerateMipmap(_)),
 ];
 
 fn _get_currently_bound_buffer_object_name(env: &mut Environment, target: GLenum) -> GLuint {

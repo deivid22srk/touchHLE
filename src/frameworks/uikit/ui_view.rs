@@ -12,8 +12,12 @@ pub mod ui_alert_view;
 pub mod ui_control;
 pub mod ui_image_view;
 pub mod ui_label;
+pub mod ui_navigation_bar;
 pub mod ui_picker_view;
+pub mod ui_progress_view;
 pub mod ui_scroll_view;
+pub mod ui_table_view;
+pub mod ui_toolbar;
 pub mod ui_web_view;
 pub mod ui_window;
 
@@ -52,6 +56,8 @@ pub(super) struct UIViewHostObject {
     clears_context_before_drawing: bool,
     user_interaction_enabled: bool,
     multiple_touch_enabled: bool,
+    exclusive_touch: bool,
+    transform: CGAffineTransform,
 }
 impl HostObject for UIViewHostObject {}
 impl Default for UIViewHostObject {
@@ -67,6 +73,8 @@ impl Default for UIViewHostObject {
             clears_context_before_drawing: true,
             user_interaction_enabled: true,
             multiple_touch_enabled: false,
+            exclusive_touch: false,
+            transform: CGAffineTransformIdentity,
         }
     }
 }
@@ -237,8 +245,11 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.borrow_mut::<UIViewHostObject>(this).multiple_touch_enabled = enabled;
 }
 
+- (bool)isExclusiveTouch {
+    env.objc.borrow::<UIViewHostObject>(this).exclusive_touch
+}
 - (())setExclusiveTouch:(bool)exclusive {
-    log!("TODO: ignoring setExclusiveTouch:{} for view {:?}", exclusive, this);
+    env.objc.borrow_mut::<UIViewHostObject>(this).exclusive_touch = exclusive;
 }
 
 - (())layoutSubviews {
@@ -423,6 +434,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         clears_context_before_drawing: _,
         user_interaction_enabled: _,
         multiple_touch_enabled: _,
+        exclusive_touch: _,
+        transform: _,
     } = std::mem::take(env.objc.borrow_mut(this));
 
     release(env, layer);
@@ -542,10 +555,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (CGAffineTransform)transform {
-    CGAffineTransformIdentity
+    env.objc.borrow::<UIViewHostObject>(this).transform
 }
 - (())setTransform:(CGAffineTransform)transform {
-    log!("TODO: [{:?} setTransform:{:?}]", this, transform);
+    let layer = env.objc.borrow::<UIViewHostObject>(this).layer;
+    () = msg![env; layer setAffineTransform:transform];
+    env.objc.borrow_mut::<UIViewHostObject>(this).transform = transform;
 }
 
 - (())setContentMode:(NSInteger)content_mode { // should be UIViewContentMode

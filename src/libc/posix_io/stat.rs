@@ -95,53 +95,80 @@ fn fstat_inner(env: &mut Environment, fd: FileDescriptor, buf: MutPtr<stat>) -> 
         return -1;
     };
 
-    // FIXME: This implementation is highly incomplete. fstat() returns a huge
-    // struct with many kinds of data in it. This code is assuming the caller
-    // only wants a small part of it.
-
-    let mut stat = stat::default();
+    let mut stat_data = stat {
+        st_dev: 1,
+        st_ino: fd as u64,
+        st_nlink: 1,
+        st_uid: 501,
+        st_gid: 501,
+        ..Default::default()
+    };
 
     match file.file {
         GuestFile::File(_) | GuestFile::IpaBundleFile(_) | GuestFile::ResourceFile(_) => {
-            stat.st_mode |= S_IFREG;
+            stat_data.st_mode |= S_IFREG;
 
-            // TODO: use `std::fs::metadata()` instead
+            // File permissions: 0644 (rw-r--r--)
+            stat_data.st_mode |= 0o644;
 
-            // Obtain file size
-            stat.st_size = file.file.stream_len().unwrap().try_into().unwrap();
+            // File size
+            stat_data.st_size = file.file.stream_len().unwrap().try_into().unwrap();
+
+            // Block info
+            stat_data.st_blksize = 4096;
+            stat_data.st_blocks = ((stat_data.st_size + 511) / 512) as u64;
         }
         GuestFile::Directory => {
-            stat.st_mode |= S_IFDIR;
+            stat_data.st_mode |= S_IFDIR;
 
-            // TODO: st_size
+            // Directory permissions: 0755 (rwxr-xr-x)
+            stat_data.st_mode |= 0o755;
+
+            stat_data.st_size = 0; // Directories have size 0 on most systems
+            stat_data.st_blksize = 4096;
+            stat_data.st_blocks = 0;
         }
-        _ => unimplemented!(),
+        _ => {
+            log!("Warning: fstat on unsupported file type");
+            set_errno(env, EBADF);
+            return -1;
+        }
     }
 
-    env.mem.write(buf, stat);
+    // Timestamps - use current time as placeholder
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap();
+    let now_secs = now.as_secs() as i32;
+    let now_nsecs = now.subsec_nanos() as i32;
+
+    stat_data.st_atimespec = timespec::new(now_secs, now_nsecs);
+    stat_data.st_mtimespec = timespec::new(now_secs, now_nsecs);
+    stat_data.st_ctimespec = timespec::new(now_secs, now_nsecs);
+    stat_data.st_birthtimespec = timespec::new(now_secs, now_nsecs);
+
+    env.mem.write(buf, stat_data);
 
     0 // success
 }
 
 fn fstat(env: &mut Environment, fd: FileDescriptor, buf: MutPtr<stat>) -> i32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
 
-    log!("Warning: fstat() call, this function is mostly unimplemented");
     let result = fstat_inner(env, fd, buf);
     log_dbg!("fstat({:?}, {:?}) -> {}", fd, buf, result);
     result
 }
 
 fn stat(env: &mut Environment, path: ConstPtr<u8>, buf: MutPtr<stat>) -> i32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
 
-    log!("Warning: stat() call, this function is mostly unimplemented");
-
     fn do_stat(env: &mut Environment, path: ConstPtr<u8>, buf: MutPtr<stat>) -> i32 {
+        use crate::libc::errno::EINVAL;
+
         if path.is_null() {
-            return -1; // TODO: Set errno
+            set_errno(env, EINVAL);
+            return -1;
         }
 
         // Open and reuse fstat implementation

@@ -8,6 +8,7 @@
 use super::mutex::pthread_mutex_t;
 use crate::dyld::FunctionExports;
 use crate::libc::pthread::mutex::pthread_mutex_unlock;
+use crate::libc::time::timespec;
 use crate::mem::{ConstPtr, MutPtr, SafeRead};
 use crate::{export_c_func, Environment};
 use std::collections::{HashMap, VecDeque};
@@ -101,6 +102,18 @@ pub fn pthread_cond_wait(
     0 // success
 }
 
+pub fn pthread_cond_timedwait(
+    env: &mut Environment,
+    cond: MutPtr<pthread_cond_t>,
+    mutex: MutPtr<pthread_mutex_t>,
+    _abstime: ConstPtr<timespec>,
+) -> i32 {
+    // TODO: implement actual timeout functionality
+    // For now, we'll just treat this as a regular wait
+    log_dbg!("TODO: pthread_cond_timedwait called, treating as regular wait");
+    pthread_cond_wait(env, cond, mutex)
+}
+
 pub fn pthread_cond_signal(env: &mut Environment, cond: MutPtr<pthread_cond_t>) -> i32 {
     let cond_var = env.mem.read(cond);
     let host_object = State::get_mut(env)
@@ -154,6 +167,7 @@ pub fn pthread_cond_destroy(env: &mut Environment, cond: MutPtr<pthread_cond_t>)
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(pthread_cond_init(_, _)),
     export_c_func!(pthread_cond_wait(_, _)),
+    export_c_func!(pthread_cond_timedwait(_, _, _)),
     export_c_func!(pthread_cond_signal(_)),
     export_c_func!(pthread_cond_broadcast(_)),
     export_c_func!(pthread_cond_destroy(_)),

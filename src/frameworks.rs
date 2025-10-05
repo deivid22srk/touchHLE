@@ -20,6 +20,7 @@
 #![allow(non_upper_case_globals)] // Lots of Apple constants begin with "k"
 #![allow(clippy::too_many_arguments)] // It's not our fault!
 
+pub mod address_book;
 pub mod audio_toolbox;
 pub mod av_audio;
 pub mod carbon_core;

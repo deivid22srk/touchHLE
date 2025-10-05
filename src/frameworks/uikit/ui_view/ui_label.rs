@@ -227,9 +227,6 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 - (())setNumberOfLines:(NSInteger)number {
     env.objc.borrow_mut::<UILabelHostObject>(this).number_of_lines = number;
-    if number != 0 && number != 1 {
-        log!("TODO: UILabel numberOfLines > 1 (label {:?})", this);
-    }
     () = msg![env; this setNeedsDisplay];
 }
 

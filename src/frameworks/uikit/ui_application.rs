@@ -54,7 +54,17 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // This should only be called by UIApplicationMain
 - (id)init {
-    assert!(env.framework_state.uikit.ui_application.shared_application.is_none());
+    // Check if shared_application already exists
+    if let Some(existing_app) = env.framework_state.uikit.ui_application.shared_application {
+        if existing_app == this {
+            // Same instance, just return it
+            log!("UIApplication init called on existing instance, returning self");
+            return this;
+        } else {
+            // Different instance attempting to initialize
+            log!("Warning: UIApplication init called but shared_application already exists. Replacing with new instance.");
+        }
+    }
     env.framework_state.uikit.ui_application.shared_application = Some(this);
     this
 }
@@ -272,14 +282,18 @@ pub(super) fn UIApplicationMain(
                 .borrow_mut::<UIApplicationHostObject>(ui_application)
                 .delegate_is_retained = true;
             retain(env, delegate);
-        } else {
+        } else if delegate_class_name != nil {
             // We have to construct the delegate.
-            assert!(delegate_class_name != nil);
             let name = ns_string::to_rust_string(env, delegate_class_name);
             let class = env.objc.get_known_class(&name, &mut env.mem);
             let delegate: id = msg![env; class new];
             let _: () = msg![env; ui_application setDelegate:delegate];
             assert!(delegate != nil);
+        } else {
+            log!(
+                "Warning: No delegate found in main nib file and no delegate class name specified in Info.plist. \
+                 The app may not function correctly."
+            );
         };
         // We can't hang on to the delegate, the guest app may change it at any
         // time.
@@ -294,19 +308,23 @@ pub(super) fn UIApplicationMain(
         let delegate: id = msg![env; ui_application delegate];
         // iOS 3+ apps usually use application:didFinishLaunchingWithOptions:,
         // and it seems to be prioritized over applicationDidFinishLaunching:.
-        if env.objc.object_has_method_named(
-            &env.mem,
-            delegate,
-            "application:didFinishLaunchingWithOptions:",
-        ) {
-            let empty_dict: id = msg_class![env; NSDictionary dictionary];
-            () = msg![env; delegate application:ui_application didFinishLaunchingWithOptions:empty_dict];
-        } else if env.objc.object_has_method_named(
-            &env.mem,
-            delegate,
-            "applicationDidFinishLaunching:",
-        ) {
-            () = msg![env; delegate applicationDidFinishLaunching:ui_application];
+        if delegate != nil {
+            if env.objc.object_has_method_named(
+                &env.mem,
+                delegate,
+                "application:didFinishLaunchingWithOptions:",
+            ) {
+                let empty_dict: id = msg_class![env; NSDictionary dictionary];
+                () = msg![env; delegate application:ui_application didFinishLaunchingWithOptions:empty_dict];
+            } else if env.objc.object_has_method_named(
+                &env.mem,
+                delegate,
+                "applicationDidFinishLaunching:",
+            ) {
+                () = msg![env; delegate applicationDidFinishLaunching:ui_application];
+            }
+        } else {
+            log!("Warning: Skipping delegate launch methods because delegate is nil.");
         }
 
         let center: id = msg_class![env; NSNotificationCenter defaultCenter];
@@ -329,9 +347,10 @@ pub(super) fn UIApplicationMain(
     {
         let pool: id = msg_class![env; NSAutoreleasePool new];
         let delegate: id = msg![env; ui_application delegate];
-        if env
-            .objc
-            .object_has_method_named(&env.mem, delegate, "applicationDidBecomeActive:")
+        if delegate != nil
+            && env
+                .objc
+                .object_has_method_named(&env.mem, delegate, "applicationDidBecomeActive:")
         {
             () = msg![env; delegate applicationDidBecomeActive:ui_application];
         }
@@ -375,9 +394,10 @@ pub(super) fn exit(env: &mut Environment) {
         }
 
         let delegate: id = msg![env; ui_application delegate];
-        if env
-            .objc
-            .object_has_method_named(&env.mem, delegate, "applicationWillResignActive:")
+        if delegate != nil
+            && env
+                .objc
+                .object_has_method_named(&env.mem, delegate, "applicationWillResignActive:")
         {
             () = msg![env; delegate applicationWillResignActive:ui_application];
         }
@@ -391,9 +411,10 @@ pub(super) fn exit(env: &mut Environment) {
     {
         let pool: id = msg_class![env; NSAutoreleasePool new];
         let delegate: id = msg![env; ui_application delegate];
-        if env
-            .objc
-            .object_has_method_named(&env.mem, delegate, "applicationWillTerminate:")
+        if delegate != nil
+            && env
+                .objc
+                .object_has_method_named(&env.mem, delegate, "applicationWillTerminate:")
         {
             () = msg![env; delegate applicationWillTerminate:ui_application];
         }

@@ -7,9 +7,10 @@
 
 use crate::frameworks::core_graphics::cg_image::CGImageRef;
 use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
+use crate::frameworks::foundation::ns_string::get_static_str;
 use crate::frameworks::foundation::NSTimeInterval;
 use crate::objc::{
-    id, impl_HostObject_with_superclass, msg, msg_super, objc_classes, release, retain,
+    id, impl_HostObject_with_superclass, msg, msg_super, nil, objc_classes, release, retain,
     ClassExports, NSZonePtr,
 };
 
@@ -49,7 +50,27 @@ pub const CLASSES: ClassExports = objc_classes! {
     msg_super![env; this dealloc]
 }
 
-// TODO: initWithCoder:
+// NSCoding implementation
+- (id)initWithCoder:(id)coder {
+    let this: id = msg_super![env; this initWithCoder:coder];
+
+    // Decode UIImage property
+    let image_key = get_static_str(env, "UIImage");
+    let image: id = msg![env; coder decodeObjectForKey:image_key];
+    if image != nil {
+        () = msg![env; this setImage:image];
+    }
+
+    // Decode UIHighlightedImage property (for buttons/interactive images)
+    let highlighted_image_key = get_static_str(env, "UIHighlightedImage");
+    let highlighted_image: id = msg![env; coder decodeObjectForKey:highlighted_image_key];
+    if highlighted_image != nil {
+        log_dbg!("UIImageView initWithCoder: highlighted image present but not fully supported");
+        // TODO: Store highlighted image if needed
+    }
+
+    this
+}
 
 - (id)initWithImage:(id)image { // UIImage*
     let size: CGSize = msg![env; image size];
